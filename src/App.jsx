@@ -347,7 +347,6 @@ const EmiVsSipCalculatorWidget = () => {
   );
 };
 
-// --- INSANE MAGICAL TOOL: Smart EMI (Zero Cost Loan) ---
 const SmartEmiCalculatorWidget = () => {
   const [loanAmount, setLoanAmount] = useState(5000000);
   const [tenureYears, setTenureYears] = useState(20);
@@ -418,10 +417,122 @@ const SmartEmiCalculatorWidget = () => {
           </div>
 
           <div className="pt-6 relative z-10">
-            <p className="text-sm font-bold tracking-widest text-emerald-400 uppercase mb-4">Required Monthly SIP to recover 100% of interest</p>
+            <p className="text-xs sm:text-sm font-bold tracking-widest text-emerald-400 uppercase mb-4">Required Monthly SIP to recover 100% of interest</p>
             <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-6">{formatCurrency(requiredSip)}</p>
             <div className="inline-flex items-center gap-2 bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-sm font-medium px-4 py-2 rounded-full">
               <Sparkles className="w-4 h-4" /> That's just {sipPercentageOfEmi}% of your EMI amount!
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    </div>
+  );
+};
+
+const EarlyClosureWidget = () => {
+  const [loanAmount, setLoanAmount] = useState(5000000);
+  const [originalTenure, setOriginalTenure] = useState(20);
+  const [targetTenure, setTargetTenure] = useState(10);
+  const [loanInterest, setLoanInterest] = useState(8.5);
+  const [sipReturn, setSipReturn] = useState(12);
+
+  useEffect(() => {
+    if (targetTenure >= originalTenure) {
+      setTargetTenure(originalTenure - 1 || 1);
+    }
+  }, [originalTenure, targetTenure]);
+
+  // EMI Math
+  const r = loanInterest / 12 / 100;
+  const n = originalTenure * 12;
+  const emi = loanAmount * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+
+  // Outstanding Principal at Target Tenure
+  const t = targetTenure * 12;
+  const outstandingPrincipal = loanAmount * (Math.pow(1 + r, n) - Math.pow(1 + r, t)) / (Math.pow(1 + r, n) - 1);
+
+  // SIP required to match outstanding principal at target tenure
+  const i = sipReturn / 12 / 100;
+  const sipFactor = ((Math.pow(1 + i, t) - 1) / i) * (1 + i);
+  const requiredSip = outstandingPrincipal / sipFactor;
+
+  // Savings Math
+  const originalTotalOutflow = emi * n;
+  const newTotalOutflow = (emi * t) + (requiredSip * t);
+  const totalSavings = originalTotalOutflow - newTotalOutflow;
+  const yearsSaved = originalTenure - targetTenure;
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 xl:gap-24 animate-in fade-in zoom-in-95 duration-500">
+      <div className="lg:col-span-7 space-y-8 lg:space-y-10">
+        <div className="bg-indigo-50 border border-indigo-200 p-6 rounded-2xl mb-4">
+          <p className="text-sm text-indigo-900 font-medium">The Debt Destroyer: Calculate the exact parallel SIP required to build a corpus large enough to foreclose your home loan years ahead of schedule.</p>
+        </div>
+        <FadeIn delay={100}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+            <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase">Loan Amount</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto">{formatCurrency(loanAmount)}</div>
+          </div>
+          <input type="range" min="500000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </FadeIn>
+        <FadeIn delay={150}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+            <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase">Original Loan Tenure</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto">{originalTenure} Years</div>
+          </div>
+          <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </FadeIn>
+        <FadeIn delay={200}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+            <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase">Target Closure Time</label>
+            <div className="text-xl sm:text-2xl font-light text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200 w-full sm:w-auto">{targetTenure} Years</div>
+          </div>
+          <input type="range" min="1" max={originalTenure - 1} step="1" value={targetTenure} onChange={(e) => setTargetTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </FadeIn>
+        <FadeIn delay={250}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+            <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase">Loan Interest Rate</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto">{loanInterest}%</div>
+          </div>
+          <input type="range" min="6" max="15" step="0.1" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </FadeIn>
+        <FadeIn delay={300}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+             <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase">Expected SIP Return</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto">{sipReturn}%</div>
+          </div>
+          <input type="range" min="8" max="25" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+        </FadeIn>
+      </div>
+      <div className="lg:col-span-5">
+        <FadeIn delay={350} className="bg-zinc-950 text-white p-8 sm:p-10 lg:p-12 xl:p-16 rounded-[2rem] sm:rounded-[2.5rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-600/30 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
+          
+          <div className="space-y-6 relative z-10 mb-8">
+            <div className="flex justify-between items-end border-b border-zinc-800 pb-4">
+              <p className="text-sm font-medium tracking-widest text-zinc-400 uppercase">Your Regular EMI</p>
+              <p className="text-xl font-light text-white">{formatCurrency(emi)}</p>
+            </div>
+            <div className="flex justify-between items-end border-b border-zinc-800 pb-4">
+              <div>
+                 <p className="text-sm font-medium tracking-widest text-zinc-400 uppercase">Loan Balance at Year {targetTenure}</p>
+                 <p className="text-[10px] text-zinc-500 mt-1">Corpus needed to foreclose</p>
+              </div>
+              <p className="text-xl font-light text-red-400">{formatCurrency(outstandingPrincipal)}</p>
+            </div>
+          </div>
+
+          <div className="pt-6 relative z-10">
+            <p className="text-xs sm:text-sm font-bold tracking-widest text-indigo-400 uppercase mb-4">Required Monthly SIP to close early</p>
+            <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-6">{formatCurrency(requiredSip)}</p>
+            
+            <div className="flex flex-col gap-3">
+              <div className="inline-flex items-center gap-2 bg-indigo-900/40 border border-indigo-500/30 text-indigo-300 text-sm font-medium px-4 py-2.5 rounded-xl w-fit">
+                <Activity className="w-4 h-4 shrink-0" /> You save {yearsSaved} years of EMIs!
+              </div>
+              <div className="inline-flex items-center gap-2 bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-sm font-medium px-4 py-2.5 rounded-xl w-fit">
+                <Check className="w-4 h-4 shrink-0" /> Net Wealth Saved: {formatCurrency(totalSavings)}
+              </div>
             </div>
           </div>
         </FadeIn>
@@ -597,7 +708,6 @@ const GoalCalculatorWidget = () => {
   );
 };
 
-// --- Clean, Minimal AI Assistant Component ---
 const AIAssistantWidget = () => {
   const [queryState, setQueryState] = useState('idle'); // idle, analyzing, result
   const [selectedGoal, setSelectedGoal] = useState(null);
@@ -657,7 +767,7 @@ const AIAssistantWidget = () => {
           </div>
         )}
 
-        {queryState === 'result' && (
+        {queryState === 'result' && selectedGoal && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
             <div className="flex items-start gap-6">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
@@ -874,7 +984,7 @@ const ServicesPage = ({ setCurrentPage }) => {
                 <li key={i} className="flex items-center gap-3 text-zinc-700 font-light text-sm sm:text-base lg:text-lg"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
               ))}
             </ul>
-            <button onClick={() => alert("Detailed page coming soon!")} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
+            <button onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
               VIEW DETAILED STRATEGY <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
             </button>
           </FadeIn>
@@ -909,7 +1019,7 @@ const ServicesPage = ({ setCurrentPage }) => {
                 <li key={i} className="flex items-center gap-3 text-zinc-700 font-light text-sm sm:text-base lg:text-lg"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
               ))}
             </ul>
-            <button onClick={() => alert("Detailed page coming soon!")} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
+            <button onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
               EXPLORE PMS CAPABILITIES <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
             </button>
           </FadeIn>
@@ -932,7 +1042,7 @@ const ServicesPage = ({ setCurrentPage }) => {
                 <li key={i} className="flex items-center gap-3 text-zinc-700 font-light text-sm sm:text-base lg:text-lg"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
               ))}
             </ul>
-            <button onClick={() => alert("Detailed page coming soon!")} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
+            <button onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} className="text-xs sm:text-sm font-medium tracking-widest text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-2 group">
               SECURE YOUR PORTFOLIO <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
             </button>
           </FadeIn>
@@ -946,7 +1056,7 @@ const ServicesPage = ({ setCurrentPage }) => {
       </section>
 
       {/* The Process */}
-      <section className="bg-zinc-50 py-24 sm:py-32 px-6 sm:px-10 lg:px-16 xl:px-24 my-16 sm:my-24 border-y border-zinc-100">
+      <section className="bg-zinc-50 py-24 sm:py-32 lg:py-40 px-6 sm:px-10 lg:px-16 xl:px-24 my-16 sm:my-24 border-y border-zinc-100">
         <div className="w-full max-w-[1800px] mx-auto">
           <FadeIn className="mb-16 sm:mb-20 max-w-4xl">
             <h2 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tighter mb-4 sm:mb-6">Our Onboarding Protocol</h2>
@@ -994,10 +1104,11 @@ const CalculatorsPage = ({ setCurrentPage }) => {
     { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
     { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
     { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
-    { id: 'emivssip', name: 'EMI vs SIP', icon: Target },
-    { id: 'smartemi', name: 'Smart EMI', icon: Sparkles },
+    { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
+    { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
+    { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
     { id: 'fire', name: 'F.I.R.E Target', icon: Map },
-    { id: 'goal', name: 'Goal Planner', icon: Star },
+    { id: 'goal', name: 'Goal Planner', icon: Target },
   ];
 
   return (
@@ -1032,7 +1143,7 @@ const CalculatorsPage = ({ setCurrentPage }) => {
                       : 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900'
                   }`}
                 >
-                  <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id && tab.id === 'smartemi' ? 'text-emerald-400' : ''}`} strokeWidth={activeTab === tab.id ? 2 : 1.5} />
+                  <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id && (tab.id === 'smartemi' || tab.id === 'earlyclosure') ? 'text-emerald-400' : ''}`} strokeWidth={activeTab === tab.id ? 2 : 1.5} />
                   {tab.name}
                 </button>
               ))}
@@ -1046,6 +1157,7 @@ const CalculatorsPage = ({ setCurrentPage }) => {
             {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
             {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
             {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
+            {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
             {activeTab === 'fire' && <FireCalculatorWidget />}
             {activeTab === 'goal' && <GoalCalculatorWidget />}
           </div>
@@ -1233,15 +1345,26 @@ const AskGeoApp = () => {
           </div>
 
           <div className="hidden lg:flex items-center gap-8 xl:gap-12">
-            {['HOME', 'ABOUT', 'SERVICES', 'TOOLS', 'INSIGHTS'].map((item) => (
-              <button 
-                key={item} 
-                onClick={() => { setCurrentPage(item.toLowerCase()); window.scrollTo(0,0); }} 
-                className={`text-[10px] xl:text-xs font-medium tracking-widest transition-colors relative after:absolute after:-bottom-1 after:left-0 after:h-px after:bg-zinc-900 after:transition-all after:duration-300 ${currentPage === item.toLowerCase() ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
-              >
-                {item}
-              </button>
-            ))}
+            {['HOME', 'ABOUT', 'SERVICES', 'ADVANCED TOOLS', 'INSIGHTS'].map((item) => {
+              const pageKey = item === 'ADVANCED TOOLS' ? 'tools' : item.toLowerCase();
+              const isActive = currentPage === pageKey;
+              const isSpecial = item === 'ADVANCED TOOLS';
+              
+              return (
+                <button 
+                  key={item} 
+                  onClick={() => { setCurrentPage(pageKey); window.scrollTo(0,0); }} 
+                  className={
+                    isSpecial 
+                      ? `flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'} text-[10px] xl:text-xs font-bold tracking-widest transition-all`
+                      : `text-[10px] xl:text-xs font-medium tracking-widest transition-colors relative after:absolute after:-bottom-1 after:left-0 after:h-px after:bg-zinc-900 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`
+                  }
+                >
+                  {isSpecial && <Sparkles className="w-3 h-3" />}
+                  {item}
+                </button>
+              );
+            })}
             
             <div className="group relative">
               <button className="text-[10px] xl:text-xs font-medium tracking-widest text-zinc-900 border border-zinc-200 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full hover:border-zinc-900 transition-all flex items-center gap-2">
@@ -1261,15 +1384,22 @@ const AskGeoApp = () => {
 
         {/* Mobile Menu */}
         <div className={`lg:hidden absolute top-full left-0 w-full bg-white border-b border-zinc-100 py-6 px-6 flex flex-col gap-6 shadow-xl transition-all duration-300 origin-top ${mobileMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'}`}>
-          {['HOME', 'ABOUT', 'SERVICES', 'TOOLS', 'INSIGHTS'].map((item) => (
-            <button 
-              key={item} 
-              onClick={() => { setCurrentPage(item.toLowerCase()); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-              className={`text-sm font-medium tracking-widest text-left ${currentPage === item.toLowerCase() ? 'text-zinc-900' : 'text-zinc-500'}`}
-            >
-              {item}
-            </button>
-          ))}
+          {['HOME', 'ABOUT', 'SERVICES', 'ADVANCED TOOLS', 'INSIGHTS'].map((item) => {
+            const pageKey = item === 'ADVANCED TOOLS' ? 'tools' : item.toLowerCase();
+            const isActive = currentPage === pageKey;
+            const isSpecial = item === 'ADVANCED TOOLS';
+
+            return (
+              <button 
+                key={item} 
+                onClick={() => { setCurrentPage(pageKey); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
+                className={`text-sm font-medium tracking-widest text-left flex items-center gap-2 ${isSpecial ? 'text-emerald-600' : (isActive ? 'text-zinc-900' : 'text-zinc-500')}`}
+              >
+                {isSpecial && <Sparkles className="w-4 h-4" />}
+                {item}
+              </button>
+            );
+          })}
           <div className="h-px bg-zinc-100 w-full"></div>
           <a href="#" className="text-sm font-medium tracking-widest text-zinc-500">E-WEALTH LOGIN</a>
           <a href="#" className="text-sm font-medium tracking-widest text-zinc-500">CLIENT DESK LOGIN</a>
@@ -1880,11 +2010,12 @@ const AskGeoApp = () => {
             
             {/* Brand Column */}
             <div className="lg:col-span-4 xl:col-span-5">
-              <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
-                  <TrendingUp className="text-white w-5 h-5" strokeWidth={2} />
-                </div>
-                <span className="text-2xl sm:text-3xl font-normal tracking-tight text-white">Ask <span className="text-zinc-500">Geo</span></span>
+              <div className="mb-6 sm:mb-8">
+                <img 
+                  src="https://static.wixstatic.com/media/c12706_95ffde7d7fdf43fcb12e87a36b56eef6~mv2.png" 
+                  alt="Ask Geo Logo" 
+                  className="h-12 sm:h-16 w-auto object-contain filter brightness-0 invert" 
+                />
               </div>
               <p className="text-base sm:text-lg font-light leading-relaxed mb-8 sm:mb-10 max-w-md">
                 A premier financial advisory firm dedicated to building, managing, and preserving wealth through highly customized, data-driven strategies and AI-optimized planning.
