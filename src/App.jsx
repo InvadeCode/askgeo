@@ -4,7 +4,7 @@ import {
   Map, ChevronRight, Bot, Sparkles, PieChart, 
   ArrowRight, Phone, Mail, MapPin, Activity, Check,
   Target, Zap, Users, Calculator, BookOpen, Star, 
-  ArrowUpRight, BarChart3, Quote, ChevronDown,
+  ArrowUpRight, BarChart3, Quote, ChevronDown, ChevronsDown,
   Facebook, Twitter, Instagram, Linkedin
 } from 'lucide-react';
 
@@ -340,6 +340,189 @@ const EmiVsSipCalculatorWidget = () => {
             <p className="text-xs sm:text-sm font-bold tracking-widest text-zinc-500 uppercase mb-3">If invested in SIP instead:</p>
             <p className="text-4xl sm:text-5xl md:text-6xl font-light text-emerald-400 tracking-tight leading-none mb-4">{formatCurrency(projectedWealth)}</p>
             <p className="text-sm text-emerald-500/80 font-light bg-emerald-900/30 inline-block px-3 py-1 rounded-lg">Opportunity Cost: {formatCurrency(wealthLost)}</p>
+          </div>
+        </FadeIn>
+      </div>
+    </div>
+  );
+};
+
+const ExtraEmiCalculatorWidget = () => {
+  const [loanAmount, setLoanAmount] = useState(13000000);
+  const [originalRate, setOriginalRate] = useState(8.75);
+  const [originalTenure, setOriginalTenure] = useState(20);
+  const [currentRate, setCurrentRate] = useState(7.50);
+  const [extraEmisPerYear, setExtraEmisPerYear] = useState(4);
+  const [extraEmiAmount, setExtraEmiAmount] = useState(104000);
+
+  // 1. Original Scenario
+  const rOrg = originalRate / 12 / 100;
+  const nOrg = originalTenure * 12;
+  const originalEMI = loanAmount * rOrg * Math.pow(1 + rOrg, nOrg) / (Math.pow(1 + rOrg, nOrg) - 1);
+  const totalInterestOrg = (originalEMI * nOrg) - loanAmount;
+
+  // 2. Rate Drop Scenario (Same EMI, reduced tenure)
+  const rCur = currentRate / 12 / 100;
+  let nRateDrop = 0;
+  if (originalEMI > loanAmount * rCur) {
+      nRateDrop = Math.log(originalEMI / (originalEMI - loanAmount * rCur)) / Math.log(1 + rCur);
+  } else {
+      nRateDrop = nOrg; 
+  }
+  const monthsRateDrop = Math.ceil(nRateDrop);
+  const totalInterestRateDrop = (originalEMI * monthsRateDrop) - loanAmount;
+
+  // 3. Prepayment Scenario (Rate Drop + Extra Annual Payments)
+  let bal = loanAmount;
+  let mPrepay = 0;
+  let totPaidPrepay = 0;
+  // Safety limit of 1200 months (100 years) to prevent infinite loops if values are extreme
+  while(bal > 0 && mPrepay < 1200) { 
+      mPrepay++;
+      let int = bal * rCur;
+      let pay = originalEMI;
+      
+      // Apply extra EMIs as an annual lump sum for simplicity and standard modeling
+      if (mPrepay % 12 === 0) {
+          pay += (extraEmisPerYear * extraEmiAmount);
+      }
+      
+      if (pay > bal + int) {
+          pay = bal + int;
+      }
+      bal = bal + int - pay;
+      totPaidPrepay += pay;
+  }
+  const totalInterestPrepay = totPaidPrepay - loanAmount;
+
+  // Savings Calculations
+  const savedTimeRateDrop = nOrg - monthsRateDrop;
+  const savedMoneyRateDrop = totalInterestOrg - totalInterestRateDrop;
+
+  const savedTimePrepay = monthsRateDrop - mPrepay;
+  const savedMoneyPrepay = totalInterestRateDrop - totalInterestPrepay;
+
+  const totalSavedTime = nOrg - mPrepay;
+  const totalSavedMoney = totalInterestOrg - totalInterestPrepay;
+
+  // Formatting Helpers
+  const formatYM = (totalMonths) => {
+      if (totalMonths <= 0) return '0m';
+      const y = Math.floor(totalMonths / 12);
+      const m = Math.round(totalMonths % 12);
+      if (y === 0) return `${m}m`;
+      if (m === 0) return `${y}y 0m`;
+      return `${y}y ${m}m`;
+  };
+
+  const formatShortAmt = (val) => {
+      if (val >= 10000000) return `₹${(val/10000000).toFixed(2)} Cr`;
+      if (val >= 100000) return `₹${(val/100000).toFixed(2)} L`;
+      return formatCurrency(val);
+  }
+
+  const safeTime = (val) => val > 0 ? val : 0;
+  const safeMoney = (val) => val > 0 ? val : 0;
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 xl:gap-24 animate-in fade-in zoom-in-95 duration-500">
+      <div className="lg:col-span-7 space-y-8 lg:space-y-10">
+        <div className="bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
+          <p className="text-sm text-blue-900 font-medium">Prepayment Accelerator: See exactly how much time and interest you save by maintaining your original EMI after a rate drop, combined with extra yearly payments.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <FadeIn delay={100} className="space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Loan Amount</span> <span className="text-zinc-900 font-bold">{formatShortAmt(loanAmount)}</span></label>
+              <input type="range" min="1000000" max="50000000" step="500000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            </FadeIn>
+            <FadeIn delay={150} className="space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Original Tenure</span> <span className="text-zinc-900 font-bold">{originalTenure} Years</span></label>
+              <input type="range" min="5" max="30" step="1" value={originalTenure} onChange={(e) => setOriginalTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            </FadeIn>
+            <FadeIn delay={200} className="space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Original Rate</span> <span className="text-zinc-900 font-bold">{originalRate}%</span></label>
+              <input type="range" min="6" max="15" step="0.1" value={originalRate} onChange={(e) => setOriginalRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            </FadeIn>
+            <FadeIn delay={250} className="space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Current Rate</span> <span className="text-emerald-600 font-bold">{currentRate}%</span></label>
+              <input type="range" min="6" max="15" step="0.1" value={currentRate} onChange={(e) => setCurrentRate(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            </FadeIn>
+        </div>
+
+        <div className="pt-6 border-t border-zinc-100">
+            <FadeIn delay={300} className="mb-8 space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Extra EMIs per year</span> <span className="text-zinc-900 font-bold">{extraEmisPerYear}</span></label>
+              <input type="range" min="0" max="12" step="1" value={extraEmisPerYear} onChange={(e) => setExtraEmisPerYear(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            </FadeIn>
+            <FadeIn delay={350} className="space-y-4">
+              <label className="text-xs sm:text-sm font-medium tracking-widest text-zinc-500 uppercase flex justify-between"><span>Extra EMI amount (₹)</span> <span className="text-zinc-900 font-bold">{formatCurrency(extraEmiAmount)}</span></label>
+              <input type="range" min="10000" max="500000" step="10000" value={extraEmiAmount} onChange={(e) => setExtraEmiAmount(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            </FadeIn>
+        </div>
+      </div>
+      
+      <div className="lg:col-span-5">
+        <FadeIn delay={400} className="bg-zinc-950 text-white p-6 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-600/20 to-transparent rounded-full blur-[40px] pointer-events-none"></div>
+          
+          <div className="space-y-6 relative z-10 mb-8">
+            <div className="grid grid-cols-2 gap-4 border-b border-zinc-800 pb-6">
+              <div>
+                <p className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Loan amount</p>
+                <p className="text-lg font-light">{formatShortAmt(loanAmount)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Monthly EMI</p>
+                <p className="text-lg font-light">{formatCurrency(originalEMI)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Original Rate</p>
+                <p className="text-lg font-light">{originalRate}%</p>
+              </div>
+               <div>
+                <p className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Current Rate</p>
+                <p className="text-lg font-light text-emerald-400">{currentRate}%</p>
+              </div>
+            </div>
+
+            {/* Tenure comparison card */}
+            <div className="bg-zinc-900 rounded-2xl p-4 sm:p-5 border border-zinc-800">
+               <p className="text-xs font-medium tracking-widest text-zinc-400 uppercase mb-4">Tenure comparison</p>
+               <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                     <p className="text-[10px] text-zinc-500 mb-1">At {originalRate}% (org)</p>
+                     <p className="text-sm sm:text-base lg:text-lg font-medium">{formatYM(nOrg)}</p>
+                  </div>
+                  <div>
+                     <p className="text-[10px] text-zinc-500 mb-1">At {currentRate}% (same EMI)</p>
+                     <p className="text-sm sm:text-base lg:text-lg font-medium text-blue-400">{formatYM(monthsRateDrop)}</p>
+                  </div>
+                  <div>
+                     <p className="text-[10px] text-zinc-500 mb-1">At {currentRate}% + prepay</p>
+                     <p className="text-sm sm:text-base lg:text-lg font-medium text-emerald-400">{formatYM(mPrepay)}</p>
+                  </div>
+               </div>
+            </div>
+
+            {/* Savings breakdown */}
+            <div className="grid grid-cols-3 gap-2 text-center mt-6">
+               <div>
+                  <p className="text-[9px] sm:text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Saved by rate drop</p>
+                  <p className="text-sm sm:text-base lg:text-lg font-medium text-blue-400 mb-0.5">{formatYM(safeTime(savedTimeRateDrop))}</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-500">{formatShortAmt(safeMoney(savedMoneyRateDrop))}</p>
+               </div>
+               <div>
+                  <p className="text-[9px] sm:text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Saved by prepay</p>
+                  <p className="text-sm sm:text-base lg:text-lg font-medium text-emerald-400 mb-0.5">{formatYM(safeTime(savedTimePrepay))}</p>
+                  <p className="text-[10px] sm:text-xs text-zinc-500">{formatShortAmt(safeMoney(savedMoneyPrepay))}</p>
+               </div>
+               <div className="border-l border-zinc-800 pl-2">
+                  <p className="text-[9px] sm:text-[10px] font-medium tracking-widest text-zinc-400 uppercase mb-1">Total saved</p>
+                  <p className="text-sm sm:text-base lg:text-lg font-medium text-white mb-0.5">{formatYM(safeTime(totalSavedTime))}</p>
+                  <p className="text-[10px] sm:text-xs text-emerald-500 bg-emerald-900/30 rounded-full inline-block px-2 py-0.5">{formatShortAmt(safeMoney(totalSavedMoney))}</p>
+               </div>
+            </div>
           </div>
         </FadeIn>
       </div>
@@ -1105,6 +1288,7 @@ const CalculatorsPage = ({ setCurrentPage }) => {
     { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
     { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
     { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
+    { id: 'prepayment', name: 'EMI Prepayment', icon: ChevronsDown },
     { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
     { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
     { id: 'fire', name: 'F.I.R.E Target', icon: Map },
@@ -1156,6 +1340,7 @@ const CalculatorsPage = ({ setCurrentPage }) => {
             {activeTab === 'stepup' && <StepUpCalculatorWidget />}
             {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
             {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
+            {activeTab === 'prepayment' && <ExtraEmiCalculatorWidget />}
             {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
             {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
             {activeTab === 'fire' && <FireCalculatorWidget />}
@@ -1345,36 +1530,28 @@ const AskGeoApp = () => {
           </div>
 
           <div className="hidden lg:flex items-center gap-8 xl:gap-12">
-            {['HOME', 'ABOUT', 'SERVICES', 'ADVANCED TOOLS', 'INSIGHTS'].map((item) => {
-              const pageKey = item === 'ADVANCED TOOLS' ? 'tools' : item.toLowerCase();
+            {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS'].map((item) => {
+              const pageKey = item.toLowerCase();
               const isActive = currentPage === pageKey;
-              const isSpecial = item === 'ADVANCED TOOLS';
               
               return (
                 <button 
                   key={item} 
                   onClick={() => { setCurrentPage(pageKey); window.scrollTo(0,0); }} 
-                  className={
-                    isSpecial 
-                      ? `flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'} text-[10px] xl:text-xs font-bold tracking-widest transition-all`
-                      : `text-[10px] xl:text-xs font-medium tracking-widest transition-colors relative after:absolute after:-bottom-1 after:left-0 after:h-px after:bg-zinc-900 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`
-                  }
+                  className={`text-[10px] xl:text-xs font-medium tracking-widest transition-colors relative after:absolute after:-bottom-1 after:left-0 after:h-px after:bg-zinc-900 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
                 >
-                  {isSpecial && <Sparkles className="w-3 h-3" />}
                   {item}
                 </button>
               );
             })}
             
-            <div className="group relative">
-              <button className="text-[10px] xl:text-xs font-medium tracking-widest text-zinc-900 border border-zinc-200 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full hover:border-zinc-900 transition-all flex items-center gap-2">
-                LOGIN <ChevronRight className="w-3 h-3 rotate-90" />
-              </button>
-              <div className="absolute top-full right-0 mt-2 w-56 sm:w-64 bg-white border border-zinc-100 rounded-2xl shadow-2xl shadow-zinc-200/50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right group-hover:scale-100 scale-95 overflow-hidden">
-                <a href="#" className="block px-5 py-4 text-sm font-light hover:bg-zinc-50 transition-colors border-b border-zinc-50">E-Wealth A/C</a>
-                <a href="#" className="block px-5 py-4 text-sm font-light hover:bg-zinc-50 transition-colors">Client Desk</a>
-              </div>
-            </div>
+            {/* Replaced Login with Prominent Advanced Tools Button */}
+            <button 
+              onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} 
+              className={`text-[10px] xl:text-xs font-bold tracking-widest px-5 sm:px-6 py-2.5 sm:py-3 rounded-full border transition-all flex items-center gap-2 ${currentPage === 'tools' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-zinc-950 border-zinc-950 text-white hover:bg-emerald-600 hover:border-emerald-600 shadow-lg'}`}
+            >
+              <Sparkles className="w-3 h-3" /> ADVANCED TOOLS
+            </button>
           </div>
 
           <button className="lg:hidden text-zinc-900 p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -1384,25 +1561,29 @@ const AskGeoApp = () => {
 
         {/* Mobile Menu */}
         <div className={`lg:hidden absolute top-full left-0 w-full bg-white border-b border-zinc-100 py-6 px-6 flex flex-col gap-6 shadow-xl transition-all duration-300 origin-top ${mobileMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'}`}>
-          {['HOME', 'ABOUT', 'SERVICES', 'ADVANCED TOOLS', 'INSIGHTS'].map((item) => {
-            const pageKey = item === 'ADVANCED TOOLS' ? 'tools' : item.toLowerCase();
+          {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS'].map((item) => {
+            const pageKey = item.toLowerCase();
             const isActive = currentPage === pageKey;
-            const isSpecial = item === 'ADVANCED TOOLS';
 
             return (
               <button 
                 key={item} 
                 onClick={() => { setCurrentPage(pageKey); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-                className={`text-sm font-medium tracking-widest text-left flex items-center gap-2 ${isSpecial ? 'text-emerald-600' : (isActive ? 'text-zinc-900' : 'text-zinc-500')}`}
+                className={`text-sm font-medium tracking-widest text-left flex items-center gap-2 ${isActive ? 'text-zinc-900' : 'text-zinc-500'}`}
               >
-                {isSpecial && <Sparkles className="w-4 h-4" />}
                 {item}
               </button>
             );
           })}
           <div className="h-px bg-zinc-100 w-full"></div>
-          <a href="#" className="text-sm font-medium tracking-widest text-zinc-500">E-WEALTH LOGIN</a>
-          <a href="#" className="text-sm font-medium tracking-widest text-zinc-500">CLIENT DESK LOGIN</a>
+          
+          {/* Mobile Advanced Tools Button */}
+          <button 
+            onClick={() => { setCurrentPage('tools'); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
+            className="mt-2 bg-zinc-950 text-white text-sm font-medium tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 active:bg-emerald-600 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" /> ADVANCED TOOLS
+          </button>
         </div>
       </nav>
 
