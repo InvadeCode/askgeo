@@ -4,7 +4,7 @@ import {
   Map, ChevronRight, Bot, Sparkles, PieChart, 
   ArrowRight, Phone, Mail, MapPin, Activity, Check,
   Target, Zap, Users, Calculator, BookOpen, Star, 
-  ArrowUpRight, BarChart3, Quote, ChevronDown, ChevronsDown,
+  ArrowUpRight, BarChart3, Quote, ChevronDown, ChevronsDown, RefreshCw,
   Facebook, Twitter, Instagram, Linkedin, Download, Lock
 } from 'lucide-react';
 
@@ -651,6 +651,192 @@ const StepUpCalculatorWidget = () => {
   );
 };
 
+
+const StpToSipCalculatorWidget = () => {
+  const [lumpsum, setLumpsum] = useState(1000000);
+  const [months, setMonths] = useState(24);
+  const [sourceReturn, setSourceReturn] = useState(6);
+  const [targetReturn, setTargetReturn] = useState(12);
+
+  const sourceMonthlyRate = sourceReturn / 12 / 100;
+  const targetMonthlyRate = targetReturn / 12 / 100;
+  const sustainableMonthlyStp = sourceMonthlyRate === 0
+    ? lumpsum / months
+    : lumpsum * sourceMonthlyRate / (1 - Math.pow(1 + sourceMonthlyRate, -months));
+
+  let sourceBalance = lumpsum;
+  let targetCorpus = 0;
+  let totalTransferred = 0;
+
+  for (let m = 1; m <= months; m++) {
+    sourceBalance = sourceBalance * (1 + sourceMonthlyRate);
+    const transfer = Math.min(sustainableMonthlyStp, sourceBalance);
+    sourceBalance -= transfer;
+    targetCorpus = (targetCorpus + transfer) * (1 + targetMonthlyRate);
+    totalTransferred += transfer;
+  }
+
+  const averageSipEquivalent = totalTransferred / months;
+  const wealthCreated = targetCorpus - lumpsum;
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
+      <div className="lg:col-span-7 space-y-6 lg:space-y-8">
+        <div className="bg-cyan-50 border border-cyan-200 p-5 rounded-2xl mb-4 shadow-sm">
+          <p className="text-sm text-cyan-900 font-medium flex items-start gap-3">
+             <RefreshCw className="w-5 h-5 text-cyan-600 shrink-0 mt-0.5 animate-spin [animation-duration:3s]" />
+             STP to SIP Planner: Start with a lumpsum, transfer it systematically, and see the average SIP you can comfortably create over time.
+          </p>
+        </div>
+        <FadeIn delay={100} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Lumpsum Parked</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(lumpsum)}</div>
+          </div>
+          <input type="range" min="100000" max="10000000" step="50000" value={lumpsum} onChange={(e) => setLumpsum(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-cyan-600" />
+        </FadeIn>
+        <FadeIn delay={150} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">STP Period</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{months} Months</div>
+          </div>
+          <input type="range" min="6" max="120" step="1" value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-cyan-600" />
+        </FadeIn>
+        <FadeIn delay={200} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Source Fund Return</label>
+            <div className="text-xl sm:text-2xl font-light text-cyan-600 bg-cyan-50 px-4 py-2 rounded-xl border border-cyan-200 w-full sm:w-auto shadow-sm">{sourceReturn}%</div>
+          </div>
+          <input type="range" min="3" max="10" step="0.5" value={sourceReturn} onChange={(e) => setSourceReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-cyan-600" />
+        </FadeIn>
+        <FadeIn delay={250} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+             <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Target Fund Return</label>
+            <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{targetReturn}%</div>
+          </div>
+          <input type="range" min="6" max="18" step="0.5" value={targetReturn} onChange={(e) => setTargetReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+        </FadeIn>
+      </div>
+      <div className="lg:col-span-5 group">
+        <FadeIn delay={300} direction="zoom" className="bg-cyan-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-cyan-500/20 to-transparent rounded-full blur-[50px] pointer-events-none group-hover:scale-110 transition-transform duration-1000"></div>
+          <div className="space-y-6 relative z-10 mb-10">
+            <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-cyan-200 uppercase mb-1">Sustainable Monthly STP</p>
+              <p className="text-2xl sm:text-3xl font-light text-cyan-300">{formatCurrency(sustainableMonthlyStp)}</p>
+            </div>
+            <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-cyan-200 uppercase mb-1">Average SIP Equivalent</p>
+              <p className="text-xl sm:text-2xl font-light">{formatCurrency(averageSipEquivalent)}</p>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-cyan-900/60 relative z-10">
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-cyan-300 uppercase mb-3">Projected Target Corpus</p>
+            <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(targetCorpus)}</p>
+            <p className="text-xs text-emerald-300 font-medium bg-emerald-900/30 inline-block px-4 py-2 rounded-lg border border-emerald-500/20">Net gain over parked capital: {formatCurrency(wealthCreated)}</p>
+          </div>
+        </FadeIn>
+      </div>
+    </div>
+  );
+};
+
+const EmiMatchSipWidget = () => {
+  const [assetCost, setAssetCost] = useState(300000);
+  const [downPayment, setDownPayment] = useState(60000);
+  const [tenureYears, setTenureYears] = useState(3);
+  const [loanInterest, setLoanInterest] = useState(10);
+  const [sipReturn, setSipReturn] = useState(12);
+
+  const loanAmount = Math.max(assetCost - downPayment, 0);
+  const n = tenureYears * 12;
+  const loanRate = loanInterest / 12 / 100;
+  const emi = loanAmount === 0
+    ? 0
+    : loanAmount * loanRate * Math.pow(1 + loanRate, n) / (Math.pow(1 + loanRate, n) - 1);
+  const totalBankOutflow = (emi * n) + downPayment;
+
+  const sipRate = sipReturn / 12 / 100;
+  const sipFutureValue = emi === 0
+    ? 0
+    : emi * (((Math.pow(1 + sipRate, n) - 1) / sipRate) * (1 + sipRate));
+  const decisionGap = sipFutureValue - assetCost;
+
+  return (
+    <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
+      <div className="lg:col-span-7 space-y-6 lg:space-y-8">
+        <div className="bg-violet-50 border border-violet-200 p-5 rounded-2xl mb-4 shadow-sm">
+          <p className="text-sm text-violet-900 font-medium flex items-start gap-3">
+             <Activity className="w-5 h-5 text-violet-600 shrink-0 mt-0.5 animate-pulse" />
+             EMI Match SIP: For purchases like a bike, compare the EMI you would pay versus investing the same monthly amount instead.
+          </p>
+        </div>
+        <FadeIn delay={100} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Asset Cost</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{formatCurrency(assetCost)}</div>
+          </div>
+          <input type="range" min="50000" max="5000000" step="10000" value={assetCost} onChange={(e) => setAssetCost(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
+        </FadeIn>
+        <FadeIn delay={150} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Down Payment</label>
+            <div className="text-xl sm:text-2xl font-light text-violet-600 bg-violet-50 px-4 py-2 rounded-xl border border-violet-200 w-full sm:w-auto shadow-sm">{formatCurrency(downPayment)}</div>
+          </div>
+          <input type="range" min="0" max={assetCost} step="10000" value={downPayment} onChange={(e) => setDownPayment(Math.min(Number(e.target.value), assetCost))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
+        </FadeIn>
+        <FadeIn delay={200} direction="left">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+            <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Tenure</label>
+            <div className="text-xl sm:text-2xl font-light text-zinc-900 bg-white px-4 py-2 rounded-xl border border-zinc-200 w-full sm:w-auto shadow-sm">{tenureYears} Years</div>
+          </div>
+          <input type="range" min="1" max="7" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
+        </FadeIn>
+        <FadeIn delay={250} direction="left">
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Interest</label>
+                <div className="text-xl sm:text-2xl font-light text-red-600 bg-red-50 px-4 py-2 rounded-xl border border-red-200 w-full sm:w-auto shadow-sm">{loanInterest}%</div>
+              </div>
+              <input type="range" min="6" max="20" step="0.5" value={loanInterest} onChange={(e) => setLoanInterest(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
+            </div>
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
+                <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">SIP Return</label>
+                <div className="text-xl sm:text-2xl font-light text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 w-full sm:w-auto shadow-sm">{sipReturn}%</div>
+              </div>
+              <input type="range" min="6" max="18" step="0.5" value={sipReturn} onChange={(e) => setSipReturn(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+      <div className="lg:col-span-5 group">
+        <FadeIn delay={300} direction="zoom" className="bg-violet-950 text-white p-8 lg:p-10 rounded-[2rem] h-full flex flex-col justify-between relative overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-[1.02]">
+          <div className="absolute top-0 right-0 w-[260px] h-[260px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-violet-500/20 to-transparent rounded-full blur-[50px] pointer-events-none group-hover:scale-110 transition-transform duration-1000"></div>
+          <div className="space-y-6 relative z-10 mb-10">
+            <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-violet-200 uppercase mb-1">Monthly EMI</p>
+              <p className="text-2xl sm:text-3xl font-light text-violet-300">{formatCurrency(emi)}</p>
+            </div>
+            <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-violet-200 uppercase mb-1">Total Bank Outflow</p>
+              <p className="text-xl sm:text-2xl font-light">{formatCurrency(totalBankOutflow)}</p>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-violet-900/60 relative z-10">
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-violet-300 uppercase mb-3">If EMI amount were invested instead</p>
+            <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(sipFutureValue)}</p>
+            <p className={`text-xs font-medium inline-block px-4 py-2 rounded-lg border ${decisionGap >= 0 ? 'text-emerald-300 bg-emerald-900/30 border-emerald-500/20' : 'text-red-300 bg-red-900/30 border-red-500/20'}`}>
+              Net difference vs asset cost: {formatCurrency(decisionGap)}
+            </p>
+          </div>
+        </FadeIn>
+      </div>
+    </div>
+  );
+};
+
 const EmiVsSipCalculatorWidget = () => {
   const [loanAmount, setLoanAmount] = useState(5000000);
   const [tenureYears, setTenureYears] = useState(15);
@@ -900,6 +1086,7 @@ const SmartEmiCalculatorWidget = () => {
   const [tenureYears, setTenureYears] = useState(20);
   const [loanInterest, setLoanInterest] = useState(8.5);
   const [sipReturn, setSipReturn] = useState(12);
+  const [recoveryMode, setRecoveryMode] = useState('interest');
 
   const r = loanInterest / 12 / 100;
   const n = tenureYears * 12;
@@ -909,8 +1096,10 @@ const SmartEmiCalculatorWidget = () => {
 
   const i = sipReturn / 12 / 100;
   const sipFactor = ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
-  const requiredSip = totalInterestPaid / sipFactor;
-  const sipPercentageOfEmi = ((requiredSip / emi) * 100).toFixed(1);
+  const targetCorpus = recoveryMode === 'interest' ? totalInterestPaid : recoveryMode === 'principal' ? loanAmount : totalPaidToBank;
+  const requiredSip = targetCorpus / sipFactor;
+  const sipPercentageOfEmi = emi > 0 ? ((requiredSip / emi) * 100).toFixed(1) : '0.0';
+  const recoveryLabel = recoveryMode === 'interest' ? 'interest' : recoveryMode === 'principal' ? 'principal' : 'principal + interest';
 
   return (
     <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
@@ -918,9 +1107,30 @@ const SmartEmiCalculatorWidget = () => {
         <div className="bg-teal-50 border border-teal-200 p-5 rounded-2xl mb-4 shadow-sm">
           <p className="text-sm text-teal-900 font-medium flex items-start gap-3">
              <Sparkles className="w-5 h-5 text-teal-600 shrink-0 mt-0.5 animate-pulse" />
-             The Magical Math: Start a fractional parallel SIP alongside your EMI. By the end of your loan tenure, your SIP corpus will recover <strong className="font-bold">100% of the interest</strong> you paid to the bank.
+             Loan Cost Recovery: Build a parallel SIP that can recover just your interest, your principal, or your entire principal plus interest outflow.
           </p>
         </div>
+        <FadeIn delay={75} direction="left">
+          <div className="flex flex-wrap gap-3">
+            {[
+              { id: 'interest', label: 'Interest Only' },
+              { id: 'principal', label: 'Principal Only' },
+              { id: 'total', label: 'Principal + Interest' },
+            ].map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setRecoveryMode(option.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 border ${
+                  recoveryMode === option.id
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-600/20'
+                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </FadeIn>
         <FadeIn delay={100} direction="left">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
             <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Amount</label>
@@ -960,13 +1170,13 @@ const SmartEmiCalculatorWidget = () => {
               <p className="text-xl font-medium text-white">{formatCurrency(emi)}</p>
             </div>
             <div className="bg-red-500/10 p-5 rounded-2xl backdrop-blur-sm border border-red-500/20 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-red-300 uppercase">Total Interest Paid</p>
-              <p className="text-xl font-medium text-red-400">{formatCurrency(totalInterestPaid)}</p>
+              <p className="text-[10px] sm:text-xs font-medium tracking-widest text-red-300 uppercase">Target Corpus</p>
+              <p className="text-xl font-medium text-red-400">{formatCurrency(targetCorpus)}</p>
             </div>
           </div>
 
           <div className="pt-8 relative z-10">
-            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-teal-400 uppercase mb-4">Required Monthly SIP to recover 100% of interest</p>
+            <p className="text-[10px] sm:text-xs font-bold tracking-widest text-teal-400 uppercase mb-4">Required Monthly SIP to recover {recoveryLabel}</p>
             <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(requiredSip)}</p>
             <div className="inline-flex items-center gap-3 bg-teal-900/50 border border-teal-500/30 text-teal-300 text-sm font-medium px-5 py-3 rounded-xl shadow-inner">
               <Sparkles className="w-5 h-5 text-teal-400 animate-pulse" /> That's just {sipPercentageOfEmi}% of your EMI amount!
@@ -984,6 +1194,7 @@ const EarlyClosureWidget = () => {
   const [targetTenure, setTargetTenure] = useState(10);
   const [loanInterest, setLoanInterest] = useState(8.5);
   const [sipReturn, setSipReturn] = useState(12);
+  const [closureMode, setClosureMode] = useState('foreclose');
 
   useEffect(() => {
     if (targetTenure >= originalTenure) {
@@ -997,15 +1208,24 @@ const EarlyClosureWidget = () => {
 
   const t = targetTenure * 12;
   const outstandingPrincipal = loanAmount * (Math.pow(1 + r, n) - Math.pow(1 + r, t)) / (Math.pow(1 + r, n) - 1);
+  const outflowTillTarget = emi * t;
+  const principalRepaidTillTarget = loanAmount - outstandingPrincipal;
+  const interestPaidTillTarget = outflowTillTarget - principalRepaidTillTarget;
+  const targetCorpus = closureMode === 'foreclose'
+    ? outstandingPrincipal
+    : closureMode === 'interest'
+    ? interestPaidTillTarget
+    : outstandingPrincipal + interestPaidTillTarget;
 
   const i = sipReturn / 12 / 100;
   const sipFactor = ((Math.pow(1 + i, t) - 1) / i) * (1 + i);
-  const requiredSip = outstandingPrincipal / sipFactor;
+  const requiredSip = targetCorpus / sipFactor;
 
   const originalTotalOutflow = emi * n;
   const newTotalOutflow = (emi * t) + (requiredSip * t);
   const totalSavings = originalTotalOutflow - newTotalOutflow;
   const yearsSaved = originalTenure - targetTenure;
+  const targetLabel = closureMode === 'foreclose' ? 'Loan Balance' : closureMode === 'interest' ? 'Interest Paid Till Closure' : 'Principal + Interest Neutralizer';
 
   return (
     <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 animate-in fade-in zoom-in-95 duration-500 text-left">
@@ -1016,6 +1236,27 @@ const EarlyClosureWidget = () => {
              The Debt Destroyer: Calculate the exact parallel SIP required to build a corpus large enough to foreclose your home loan years ahead of schedule.
           </p>
         </div>
+        <FadeIn delay={75} direction="left">
+          <div className="flex flex-wrap gap-3">
+            {[
+              { id: 'foreclose', label: 'Foreclose Balance' },
+              { id: 'interest', label: 'Recover Interest' },
+              { id: 'total', label: 'Balance + Interest' },
+            ].map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setClosureMode(option.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 border ${
+                  closureMode === option.id
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20'
+                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </FadeIn>
         <FadeIn delay={100} direction="left">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
             <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Loan Amount</label>
@@ -1035,7 +1276,7 @@ const EarlyClosureWidget = () => {
             <label className="text-xs font-medium tracking-widest text-zinc-500 uppercase">Target Closure Time</label>
             <div className="text-xl sm:text-2xl font-light text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200 w-full sm:w-auto shadow-sm">{targetTenure} Years</div>
           </div>
-          <input type="range" min="1" max={originalTenure - 1} step="1" value={targetTenure} onChange={(e) => setTargetTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+          <input type="range" min="1" max={Math.max(originalTenure - 1, 1)} step="1" value={targetTenure} onChange={(e) => setTargetTenure(Number(e.target.value))} className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
         </FadeIn>
         <FadeIn delay={250} direction="left">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-3">
@@ -1063,10 +1304,10 @@ const EarlyClosureWidget = () => {
             </div>
             <div className="bg-white/5 p-4 rounded-2xl backdrop-blur-sm border border-white/10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
               <div>
-                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-indigo-200 uppercase">Loan Balance at Year {targetTenure}</p>
-                 <p className="text-[9px] text-zinc-400 mt-0.5">Corpus needed to foreclose</p>
+                 <p className="text-[10px] sm:text-xs font-medium tracking-widest text-indigo-200 uppercase">{targetLabel}</p>
+                 <p className="text-[9px] text-zinc-400 mt-0.5">Corpus needed at year {targetTenure}</p>
               </div>
-              <p className="text-xl font-medium text-red-400">{formatCurrency(outstandingPrincipal)}</p>
+              <p className="text-xl font-medium text-red-400">{formatCurrency(targetCorpus)}</p>
             </div>
           </div>
 
@@ -1557,8 +1798,10 @@ const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
   const tabs = [
     { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
     { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
+    { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
     { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
     { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
+    { id: 'emimatch', name: 'EMI Match SIP', icon: Activity },
     { id: 'prepayment', name: 'EMI Prepayment', icon: ChevronsDown },
     { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
     { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
@@ -1605,8 +1848,10 @@ const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
             <div className="min-h-[550px]">
               {activeTab === 'sip' && <SipCalculatorWidget />}
               {activeTab === 'stepup' && <StepUpCalculatorWidget />}
+              {activeTab === 'stp' && <StpToSipCalculatorWidget />}
               {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
               {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
+              {activeTab === 'emimatch' && <EmiMatchSipWidget />}
               {activeTab === 'prepayment' && <ExtraEmiCalculatorWidget />}
               {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
               {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
