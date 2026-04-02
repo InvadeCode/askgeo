@@ -2381,11 +2381,11 @@ const AskGeoApp = () => {
                   <div className="grid grid-cols-2 gap-4 sm:gap-5 relative z-10">
                     <div className="bg-zinc-50 p-5 sm:p-6 rounded-2xl border border-zinc-100 hover:bg-white hover:shadow-md transition-all">
                       <p className="text-[10px] sm:text-xs font-bold text-zinc-400 tracking-widest uppercase mb-2">AUM</p>
-                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-zinc-900">133K<span className="text-zinc-400 text-sm sm:text-base ml-1 font-medium">Cr</span></p>
+                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-zinc-900">13.44K<span className="text-zinc-400 text-sm sm:text-base ml-1 font-medium">Cr</span></p>
                     </div>
                     <div className="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-100/50 hover:bg-emerald-100/50 hover:shadow-md transition-all">
                       <p className="text-[10px] sm:text-xs font-bold text-emerald-600/70 tracking-widest uppercase mb-2">XIRR</p>
-                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-emerald-700">+12%</p>
+                      <p className="text-3xl sm:text-4xl lg:text-5xl font-light text-emerald-700">+14.4%</p>
                     </div>
                   </div>
                 </div>
@@ -2408,7 +2408,7 @@ const AskGeoApp = () => {
                   </div>
                   <div className="pr-4 sm:pr-6">
                     <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 tracking-widest uppercase mb-1">Trust</p>
-                    <p className="text-sm sm:text-base font-medium text-zinc-900">26L+ Clients</p>
+                    <p className="text-sm sm:text-base font-medium text-zinc-900">2.6K+ Clients</p>
                   </div>
                 </div>
 
