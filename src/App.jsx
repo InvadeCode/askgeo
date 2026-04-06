@@ -9,60 +9,104 @@ import {
 } from 'lucide-react';
 
 // --- BACKEND API CONFIGURATION ---
-// Directly using the deployed Render URL to ensure compatibility across all environments
-const API_ENDPOINT = "https://ask-geo.onrender.com/api/send-email";
-const TARGET_EMAIL = "complete.anant@hotmail.com";
+const TARGET_EMAIL = "geoconsultant@gmail.com";
+
+const fetchWithTimeout = async (url, options = {}, timeout = 60000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const wakeBackend = async () => {
+  try {
+    // Pinging the root URL to wake the Render instance (avoids 404s on missing /health routes)
+    await fetchWithTimeout("https://ask-geo.onrender.com/", { method: "GET" }, 20000);
+  } catch (error) {
+    console.warn("Wake ping finished (server should be spinning up).");
+  }
+};
 
 const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
-  try {
-    // Format attachments for Nodemailer (extract base64 content safely)
-    const formattedAttachments = attachments.map(att => {
-      let base64String = '';
-      if (att.dataUri) {
-         base64String = att.dataUri.includes(',') ? att.dataUri.split(',')[1] : att.dataUri;
-      } else if (att.content) {
-         base64String = att.content;
-      }
-      return {
-        filename: att.filename,
-        content: base64String,
-        encoding: 'base64' 
-      };
-    });
+  const formattedAttachments = attachments.map((att) => {
+    let base64String = '';
 
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        to: TARGET_EMAIL,
-        subject: subject,
-        html: htmlBody,
-        attachments: formattedAttachments
-      })
-    });
-    
-    if (!response.ok) {
-      let errorDetail = await response.text();
-      try {
-         const json = JSON.parse(errorDetail);
-         if (json.error) errorDetail = json.error;
-      } catch(e) {}
-      throw new Error(`HTTP Error: ${response.status} - ${errorDetail}`);
+    if (att.dataUri) {
+      base64String = att.dataUri.includes(',')
+        ? att.dataUri.split(',')[1]
+        : att.dataUri;
+    } else if (att.content) {
+      base64String = att.content;
     }
-    
-    const data = await response.json();
-    console.log('Backend Delivery Status:', data);
-  } catch (error) {
-    console.error('Backend Delivery Error:', error);
-    if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-      console.error(
-        "🚨 CRITICAL ERROR: The frontend cannot reach the backend server at " + API_ENDPOINT + "\n" +
-        "Ensure your backend is running, or check your VITE_API_URL environment variable."
+
+    return {
+      filename: att.filename,
+      content: base64String,
+      encoding: 'base64',
+    };
+  });
+
+  await wakeBackend();
+
+  // Fallback array: Try the new Resend endpoint first, fallback to the old Gmail endpoint if it hasn't been deployed yet.
+  const endpointsToTry = [
+    "https://ask-geo.onrender.com/api/submit",
+    "https://ask-geo.onrender.com/api/send-email"
+  ];
+
+  let response;
+  let data;
+
+  for (const endpoint of endpointsToTry) {
+    try {
+      response = await fetchWithTimeout(
+        endpoint,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            to: TARGET_EMAIL,
+            subject,
+            html: htmlBody,
+            attachments: formattedAttachments,
+          }),
+        },
+        60000
       );
+
+      if (response.status === 404) {
+        console.warn(`Endpoint ${endpoint} returned 404. Trying next fallback...`);
+        continue; 
+      }
+
+      data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `HTTP Error: ${response.status}`);
+      }
+
+      console.log('Backend Delivery Status:', data);
+      return data;
+    } catch (error) {
+      // If the error isn't a 404 fallback situation, throw it immediately
+      if (response && response.status !== 404) {
+        throw error;
+      }
     }
   }
+
+  throw new Error("HTTP Error: 404. Both endpoints failed. Please make sure your updated backend code is fully deployed on Render.");
 };
 
 const getBeautifulEmailTemplate = (title, leadData, metrics = []) => `
@@ -219,22 +263,29 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
-    
-    // --- INTEGRATED BACKEND API (BACKGROUND FIRE & FORGET) ---
-    // We do NOT await this, so the UI instantly resolves for the user 
-    const emailHtml = getBeautifulEmailTemplate(title, formData);
-    sendEmailViaBackend(`New Ask Geo Lead: ${title} - ${formData.name}`, emailHtml).catch(console.error);
 
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      const emailHtml = getBeautifulEmailTemplate(title, formData);
+
+      await sendEmailViaBackend(
+        `New Ask Geo Lead: ${title} - ${formData.name}`,
+        emailHtml
+      );
+
       setIsSuccess(true);
+
       setTimeout(() => {
         onClose();
       }, 2000);
-    }, 1200);
+    } catch (error) {
+      console.error("General contact email failed:", error);
+      alert(`Email failed: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -291,188 +342,184 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 // --- CALCULATOR WIDGETS ---
 const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 
-const generateReport = (config, leadData) => {
+const generateReport = async (config, leadData) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert("Please allow popups to download the report.");
-    return;
+    throw new Error("Please allow popups to download the report.");
   }
-  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const today = new Date().toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   const refId = `AG-${Math.floor(Math.random() * 10000)}`;
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>Ask Geo - ${config.reportTitle}</title>
-      <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        @page { size: A4; margin: 0; }
-        * { box-sizing: border-box; text-align: left; }
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #18181b; background: #ffffff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; position: relative; overflow: hidden; background: #ffffff; }
-        .header { background: #047857; color: #ffffff; padding: 50px 50px 40px 50px; position: relative; overflow: hidden; }
-        .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
-        .report-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #a7f3d0; margin-bottom: 10px; }
-        .main-heading { font-size: 36px; font-weight: 300; letter-spacing: -1px; margin: 0 0 10px 0; line-height: 1.1; }
-        .client-info { display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; margin-top: 30px; }
-        .info-block p { margin: 0 0 5px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #d1fae5; }
-        .info-block h4 { margin: 0; font-size: 14px; font-weight: 500; }
-        .content { padding: 40px 50px; }
-        .chart-container { background: #f8fafc; border-radius: 16px; padding: 30px; color: #0f172a; margin-bottom: 30px; border: 1px solid #e2e8f0; }
-        .chart-title { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #64748b; margin-bottom: 15px; }
-        .highlight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .metric-card { background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
-        .metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }
-        .metric-value { font-size: 28px; font-weight: 300; margin: 0; color: #0f172a; letter-spacing: -1px; }
-        .metric-value.success { color: #059669; font-weight: 500; }
-        .allocation-table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: white; }
-        .allocation-table th { background: #f8fafc; text-align: left; padding: 12px 16px; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-        .allocation-table td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: left; }
-        .footer { position: absolute; bottom: 0; width: 100%; padding: 30px 50px; border-top: 1px solid #e2e8f0; background: #ffffff; box-sizing: border-box; }
-      </style>
-    </head>
-    <body>
-      <div class="page-container" id="pdf-content">
-        <div class="header">
-          <div class="logo-container">
-            <div style="background: #ffffff; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" style="height: 28px; width: auto; object-fit: contain;" />
-            </div>
-          </div>
-          <div class="report-title">${config.reportTitle}</div>
-          <h1 class="main-heading">${config.mainHeading}</h1>
-          <div class="client-info">
-            <div class="info-block">
-              <p>Prepared For</p>
-              <h4>${leadData.name}</h4>
-              <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">${leadData.email}</h4>
-            </div>
-            <div class="info-block" style="text-align: right;">
-              <p>Date</p>
-              <h4>${today}</h4>
-              <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">Ref: ${refId}</h4>
-            </div>
+  const pdfMarkup = `
+    <div class="page-container" id="pdf-content">
+      <div class="header">
+        <div class="logo-container">
+          <div style="background: #ffffff; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" style="height: 28px; width: auto; object-fit: contain;" />
           </div>
         </div>
-        <div class="content">
-          <p style="font-size: 14px; color: #475569; line-height: 1.6; font-weight: 400; margin-bottom: 25px;">
-            ${config.summaryText}
-          </p>
-          <div class="chart-container">
-            <div class="chart-title">${config.primaryMetric.label}</div>
-            <div style="font-size: 48px; font-weight: 300; letter-spacing: -2px; margin-bottom: 15px; color: #047857;">${config.primaryMetric.value}</div>
-            <svg style="width: 100%; height: 100px; display: block; overflow: visible;" viewBox="0 0 1000 200" preserveAspectRatio="none">
-              <path d="M0,200 L1000,100" stroke="#cbd5e1" stroke-width="2" fill="none" />
-              <path d="M0,200 Q600,180 1000,0" stroke="#059669" stroke-width="4" fill="none" />
-              <path d="M0,200 Q600,180 1000,0 L1000,200 Z" fill="rgba(16, 185, 129, 0.1)" />
-            </svg>
+        <div class="report-title">${config.reportTitle}</div>
+        <h1 class="main-heading">${config.mainHeading}</h1>
+        <div class="client-info">
+          <div class="info-block">
+            <p>Prepared For</p>
+            <h4>${leadData.name}</h4>
+            <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">${leadData.email}</h4>
           </div>
-          
-          <div class="highlight-grid">
-            ${config.secondaryMetrics.map(metric => `
-              <div class="metric-card" ${metric.success ? 'style="background: #ecfdf5; border-color: #a7f3d0;"' : ''}>
-                <div class="metric-label" ${metric.success ? 'style="color: #065f46;"' : ''}>${metric.label}</div>
-                <div class="metric-value ${metric.success ? 'success' : ''}">${metric.value}</div>
-              </div>
-            `).join('')}
+          <div class="info-block" style="text-align: right;">
+            <p>Date</p>
+            <h4>${today}</h4>
+            <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">Ref: ${refId}</h4>
           </div>
-
-          ${config.allocation ? `
-            <div style="margin-top: 25px;">
-              <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #0f172a;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                Live Market Allocation Strategy
-              </div>
-              <p style="font-size: 11px; color: #64748b; margin-bottom: 12px;">${config.allocation.description}</p>
-              <table class="allocation-table">
-                <thead><tr><th>Fund Name / AMC</th><th>Category</th><th>Allocation (%)</th><th>Monthly (₹)</th></tr></thead>
-                <tbody>
-                  ${config.allocation.funds.map(fund => `
-                    <tr>
-                      <td><strong style="color: #0f172a;">${fund.name}</strong></td>
-                      <td><span style="background: #f1f5f9; padding: 4px 6px; border-radius: 4px; font-size: 10px;">${fund.category}</span></td>
-                      <td><strong>${fund.percent}%</strong></td>
-                      <td style="color: #059669; font-weight: 600;">${formatCurrency(fund.amount)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          ` : ''}
-
-        </div>
-        <div class="footer">
-          <p style="font-size: 8px; color: #94a3b8; text-align: left; margin-bottom: 8px;">Disclaimer: This blueprint is generated by Ask Geo AI Tools for educational and planning purposes only. Calculations are subject to market risks and historical assumptions.</p>
-          <div style="text-align: right; font-size: 11px; font-weight: 600; color: #0f172a;">Ask Geo Financial Services<br/><span style="color: #64748b; font-weight: 400; font-size: 10px;">www.askgeo.in | +91 99606 24271</span></div>
         </div>
       </div>
-      <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); };</script>
-    </body>
+      <div class="content">
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; font-weight: 400; margin-bottom: 25px;">
+          ${config.summaryText}
+        </p>
+        <div class="chart-container">
+          <div class="chart-title">${config.primaryMetric.label}</div>
+          <div style="font-size: 48px; font-weight: 300; letter-spacing: -2px; margin-bottom: 15px; color: #047857;">${config.primaryMetric.value}</div>
+          <svg style="width: 100%; height: 100px; display: block; overflow: visible;" viewBox="0 0 1000 200" preserveAspectRatio="none">
+            <path d="M0,200 L1000,100" stroke="#cbd5e1" stroke-width="2" fill="none" />
+            <path d="M0,200 Q600,180 1000,0" stroke="#059669" stroke-width="4" fill="none" />
+            <path d="M0,200 Q600,180 1000,0 L1000,200 Z" fill="rgba(16, 185, 129, 0.1)" />
+          </svg>
+        </div>
+
+        <div class="highlight-grid">
+          ${config.secondaryMetrics.map(metric => `
+            <div class="metric-card" ${metric.success ? 'style="background: #ecfdf5; border-color: #a7f3d0;"' : ''}>
+              <div class="metric-label" ${metric.success ? 'style="color: #065f46;"' : ''}>${metric.label}</div>
+              <div class="metric-value ${metric.success ? 'success' : ''}">${metric.value}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="footer">
+        <p style="font-size: 8px; color: #94a3b8; text-align: left; margin-bottom: 8px;">Disclaimer: This blueprint is generated by Ask Geo AI Tools for educational and planning purposes only. Calculations are subject to market risks and historical assumptions.</p>
+        <div style="text-align: right; font-size: 11px; font-weight: 600; color: #0f172a;">Ask Geo Financial Services<br/><span style="color: #64748b; font-weight: 400; font-size: 10px;">www.askgeo.in | +91 99606 24271</span></div>
+      </div>
+    </div>
+  `;
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Ask Geo - ${config.reportTitle}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+          @page { size: A4; margin: 0; }
+          * { box-sizing: border-box; text-align: left; }
+          body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #18181b; background: #ffffff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; position: relative; overflow: hidden; background: #ffffff; }
+          .header { background: #047857; color: #ffffff; padding: 50px 50px 40px 50px; position: relative; overflow: hidden; }
+          .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+          .report-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #a7f3d0; margin-bottom: 10px; }
+          .main-heading { font-size: 36px; font-weight: 300; letter-spacing: -1px; margin: 0 0 10px 0; line-height: 1.1; }
+          .client-info { display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; margin-top: 30px; }
+          .info-block p { margin: 0 0 5px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #d1fae5; }
+          .info-block h4 { margin: 0; font-size: 14px; font-weight: 500; }
+          .content { padding: 40px 50px; }
+          .chart-container { background: #f8fafc; border-radius: 16px; padding: 30px; color: #0f172a; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+          .chart-title { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #64748b; margin-bottom: 15px; }
+          .highlight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+          .metric-card { background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
+          .metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }
+          .metric-value { font-size: 28px; font-weight: 300; margin: 0; color: #0f172a; letter-spacing: -1px; }
+          .metric-value.success { color: #059669; font-weight: 500; }
+          .footer { position: absolute; bottom: 0; width: 100%; padding: 30px 50px; border-top: 1px solid #e2e8f0; background: #ffffff; box-sizing: border-box; }
+        </style>
+      </head>
+      <body>
+        ${pdfMarkup}
+        <script>
+          window.onload = function() {
+            setTimeout(() => { window.print(); }, 500);
+          };
+        </script>
+      </body>
     </html>
   `;
-  printWindow.document.write(htmlContent);
+
+  printWindow.document.write(printHtml);
   printWindow.document.close();
 
-  // --- BACKGROUND PDF GENERATION AND EMAIL DISPATCH ---
-  const sendReportViaEmail = async () => {
-    try {
-      const emailHtmlBody = getBeautifulEmailTemplate(
-        `Report Download: ${config.reportTitle}`, 
-        leadData, 
-        [config.primaryMetric, ...config.secondaryMetrics]
-      );
-      
-      // Inject HTML string into a hidden off-screen div to parse it into a PDF
-      const hiddenDiv = document.createElement('div');
-      hiddenDiv.innerHTML = htmlContent;
-      hiddenDiv.style.position = 'absolute';
-      hiddenDiv.style.left = '-9999px';
-      document.body.appendChild(hiddenDiv);
+  const emailHtmlBody = getBeautifulEmailTemplate(
+    `Report Download: ${config.reportTitle}`,
+    leadData,
+    [config.primaryMetric, ...config.secondaryMetrics]
+  );
 
-      // Dynamically load html2pdf from CDN
-      if (!window.html2pdf) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-          script.onload = resolve;
-          script.onerror = () => reject(new Error("html2pdf.js blocked by browser or failed to load."));
-          document.head.appendChild(script);
-        });
-      }
+  let hiddenDiv = null;
 
-      // Reduced scale to prevent the base64 from getting too massive
-      const opt = {
-        margin:       0,
-        filename:     `${config.reportTitle.replace(/\s+/g, '_')}.pdf`,
-        image:        { type: 'jpeg', quality: 0.80 }, 
-        html2canvas:  { scale: 1.5, useCORS: true }, 
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
-      };
-
-      // Generate the PDF and get it as base64 string
-      const targetElement = hiddenDiv.querySelector('#pdf-content');
-      const pdfBase64DataUri = await window.html2pdf().set(opt).from(targetElement).outputPdf('datauristring');
-      
-      document.body.removeChild(hiddenDiv); // Clean up
-
-      await sendEmailViaBackend(
-        `Report Request: ${config.reportTitle} for ${leadData.name}`,
-        emailHtmlBody,
-        [{ filename: opt.filename, dataUri: pdfBase64DataUri }]
-      );
-
-    } catch (e) {
-      console.error("PDF generation failed, sending email without attachment", e);
-      // Fallback: Send email without attachment if PDF generation fails
-      const fallbackEmailHtmlBody = getBeautifulEmailTemplate(`Report Download: ${config.reportTitle}`, leadData, [config.primaryMetric, ...config.secondaryMetrics]);
-      await sendEmailViaBackend(`Report Request: ${config.reportTitle} for ${leadData.name}`, fallbackEmailHtmlBody);
+  try {
+    // Clear selection to prevent html2canvas InvalidNodeTypeError
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
     }
-  };
 
-  // Trigger non-blocking async function to send the email with attachment
-  sendReportViaEmail().catch(console.error);
+    hiddenDiv = document.createElement('div');
+    hiddenDiv.style.position = 'absolute';
+    hiddenDiv.style.left = '0';
+    hiddenDiv.style.top = '0';
+    hiddenDiv.style.width = '210mm';
+    hiddenDiv.style.background = '#fff';
+    hiddenDiv.style.opacity = '0.01'; // Visible to renderer, invisible to user
+    hiddenDiv.style.pointerEvents = 'none';
+    hiddenDiv.style.zIndex = '-9999';
+    hiddenDiv.innerHTML = pdfMarkup;
+    document.body.appendChild(hiddenDiv);
+
+    if (!window.html2pdf) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('html2pdf.js failed to load'));
+        document.head.appendChild(script);
+      });
+    }
+
+    const opt = {
+      margin: 0,
+      filename: `${config.reportTitle.replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 0.8 },
+      html2canvas: { scale: 1.5, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+    };
+
+    const targetElement = hiddenDiv.querySelector('#pdf-content');
+    const pdfBase64DataUri = await window.html2pdf()
+      .set(opt)
+      .from(targetElement)
+      .outputPdf('datauristring');
+
+    await sendEmailViaBackend(
+      `Report Request: ${config.reportTitle} for ${leadData.name}`,
+      emailHtmlBody,
+      [{ filename: opt.filename, dataUri: pdfBase64DataUri }]
+    );
+  } catch (error) {
+    console.error('PDF generation failed, sending email without attachment', error);
+
+    await sendEmailViaBackend(
+      `Report Request: ${config.reportTitle} for ${leadData.name}`,
+      emailHtmlBody
+    );
+  } finally {
+    if (hiddenDiv && document.body.contains(hiddenDiv)) {
+      document.body.removeChild(hiddenDiv);
+    }
+  }
 };
 
 const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
@@ -767,9 +814,9 @@ const StepUpCalculatorWidget = () => {
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-500/80 uppercase mb-3">Accelerated Future Value</p>
-              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none">{formatCurrency(futureValue)}</p>
+              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(futureValue)}</p>
               
-              <button onClick={handleDownloadInitiate} className="w-full mt-8 py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
+              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Download Strategy Report</span>
               </button>
@@ -2777,35 +2824,34 @@ const AskGeoApp = () => {
               <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
                 <li><button onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Home</button></li>
                 <li><button onClick={() => { setCurrentPage('about'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">About Geo</button></li>
-                <li><button onClick={() => { setCurrentPage('home'); setTimeout(() => document.getElementById('ai-tools')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="hover:text-emerald-400 transition-colors text-left pl-4 border-l-2 border-zinc-800">AI Insight Engine</button></li>
-                <li><button onClick={() => { setCurrentPage('insights'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left pl-4 border-l-2 border-zinc-800">Market Intelligence</button></li>
-                <li><button onClick={() => openContactModal('Contact Us')} className="hover:text-emerald-400 transition-colors text-left">Contact Us</button></li>
+                <li><button onClick={() => { setCurrentPage('home'); setTimeout(() => document.getElementById('ai-tools')?.scrollIntoView({behavior: 'smooth'}), 100); }} className="hover:text-emerald-400 transition-colors text-left">AI Insight Engine</button></li>
+                <li><button onClick={() => { setCurrentPage('insights'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Market Intelligence</button></li>
               </ul>
             </div>
 
-            {/* Services Column */}
-            <div className="lg:col-span-3 lg:col-start-10">
-              <h4 className="text-white font-medium mb-8 text-base">Our Services</h4>
+            {/* Legal Column */}
+            <div className="lg:col-span-3">
+              <h4 className="text-white font-medium mb-8 text-base">Legal</h4>
               <ul className="space-y-5 text-sm sm:text-base font-light text-zinc-400 flex flex-col items-start">
-                <li><button onClick={() => { setCurrentPage('services'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Wealth Management</button></li>
-                <li><button onClick={() => { setCurrentPage('services'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Portfolio Analysis</button></li>
-                <li><button onClick={() => { setCurrentPage('services'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Insurance Planning</button></li>
-                <li><button onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Retirement Strategy</button></li>
-                <li><button onClick={() => { setCurrentPage('services'); window.scrollTo(0,0); }} className="hover:text-emerald-400 transition-colors text-left">Tax Optimization</button></li>
+                <li><button className="hover:text-emerald-400 transition-colors text-left">Privacy Policy</button></li>
+                <li><button className="hover:text-emerald-400 transition-colors text-left">Terms of Service</button></li>
+                <li><button className="hover:text-emerald-400 transition-colors text-left">Disclosure</button></li>
+                <li><button className="hover:text-emerald-400 transition-colors text-left">Regulatory Information</button></li>
               </ul>
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-8 text-[10px] sm:text-xs font-bold tracking-widest uppercase text-zinc-500">
-            <p>© {new Date().getFullYear()} Ask Geo Financial Services.</p>
-            <div className="flex flex-wrap gap-8">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white transition-colors">SEBI Registration</a>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-xs sm:text-sm font-light text-zinc-500">
+            <p>© {new Date().getFullYear()} Ask Geo Financial Services. All rights reserved.</p>
+            <div className="flex gap-6">
+              <p className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Pune, Maharashtra</p>
+              <p className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 99606 24271</p>
             </div>
           </div>
         </div>
       </footer>
+      
+      {/* Render Modals at the Root Level */}
       <GeneralContactModal isOpen={isContactModalOpen} onClose={() => setContactModalOpen(false)} title={contactModalTitle} />
     </div>
   );
