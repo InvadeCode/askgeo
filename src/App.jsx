@@ -8,46 +8,40 @@ import {
   Download, Lock
 } from 'lucide-react';
 
-// --- GMAIL SMTP CONFIGURATION ---
-const GMAIL_USER = "complete.anant@gmail.com";
-const GMAIL_PASS = "srbo gcxp whgl ghcu";
+// --- BACKEND API CONFIGURATION ---
+// Ensure your server.js backend is running on this endpoint.
+const API_ENDPOINT = "http://localhost:3001/api/send-email";
 const TARGET_EMAIL = "complete.anant@gmail.com";
 
-const sendEmailViaGmail = async (subject, htmlBody, attachments = []) => {
+const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
   try {
-    // Load SMTP.js dynamically to allow sending emails directly from the frontend
-    if (!window.Email) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://smtpjs.com/v3/smtp.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("SMTP.js blocked by browser or failed to load."));
-        document.head.appendChild(script);
-      });
-    }
-
+    // Format attachments for Nodemailer (expects 'path' for base64 Data URIs)
     const formattedAttachments = attachments.map(att => ({
-      name: att.filename,
-      data: att.dataUri // SMTP.js expects the full data URI (data:application/pdf;base64,...)
+      filename: att.filename,
+      path: att.dataUri 
     }));
 
-    const response = await window.Email.send({
-      Host : "smtp.gmail.com",
-      Username : GMAIL_USER,
-      Password : GMAIL_PASS,
-      To : TARGET_EMAIL,
-      From : GMAIL_USER,
-      Subject : subject,
-      Body : htmlBody,
-      Attachments : formattedAttachments.length > 0 ? formattedAttachments : undefined
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to: TARGET_EMAIL,
+        subject: subject,
+        html: htmlBody,
+        attachments: formattedAttachments
+      })
     });
     
-    console.log('Gmail Delivery Status:', response);
-    if (response !== "OK") {
-      throw new Error(response);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
     }
+    
+    const data = await response.json();
+    console.log('Backend Delivery Status:', data);
   } catch (error) {
-    console.error('Gmail Delivery Error:', error);
+    console.error('Backend Delivery Error:', error);
   }
 };
 
@@ -209,11 +203,10 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
     e.preventDefault();
     setIsProcessing(true);
     
-    // --- INTEGRATED GMAIL API (BACKGROUND FIRE & FORGET) ---
+    // --- INTEGRATED BACKEND API (BACKGROUND FIRE & FORGET) ---
     // We do NOT await this, so the UI instantly resolves for the user 
-    // even if the script loading or SMTP connection is slow/blocked.
     const emailHtml = getBeautifulEmailTemplate(title, formData);
-    sendEmailViaGmail(`New Ask Geo Lead: ${title} - ${formData.name}`, emailHtml).catch(console.error);
+    sendEmailViaBackend(`New Ask Geo Lead: ${title} - ${formData.name}`, emailHtml).catch(console.error);
 
     setTimeout(() => {
       setIsProcessing(false);
@@ -444,7 +437,7 @@ const generateReport = (config, leadData) => {
       
       document.body.removeChild(hiddenDiv); // Clean up
 
-      await sendEmailViaGmail(
+      await sendEmailViaBackend(
         `Report Request: ${config.reportTitle} for ${leadData.name}`,
         emailHtmlBody,
         [{ filename: opt.filename, dataUri: pdfBase64DataUri }]
@@ -454,7 +447,7 @@ const generateReport = (config, leadData) => {
       console.error("PDF generation failed, sending email without attachment", e);
       // Fallback: Send email without attachment if PDF generation fails
       const fallbackEmailHtmlBody = getBeautifulEmailTemplate(`Report Download: ${config.reportTitle}`, leadData, [config.primaryMetric, ...config.secondaryMetrics]);
-      await sendEmailViaGmail(`Report Request: ${config.reportTitle} for ${leadData.name}`, fallbackEmailHtmlBody);
+      await sendEmailViaBackend(`Report Request: ${config.reportTitle} for ${leadData.name}`, fallbackEmailHtmlBody);
     }
   };
 
