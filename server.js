@@ -4,17 +4,37 @@ import nodemailer from 'nodemailer';
 
 const app = express();
 
-// Enable CORS for your frontend
-app.use(cors());
-// 50mb limit is required for the large base64 PDF attachments
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://askgeo.in',
+  'https://www.askgeo.in',
+  'https://ask-geo.onrender.com'
+];
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept']
+}));
+
+app.options('*', cors());
+
 app.use(express.json({ limit: '50mb' }));
 
-// Set up Nodemailer with Environment Variables
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true, service: 'ask-geo-mailer' });
+});
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
+    user: process.env.GMAIL_USER || 'complete.anant@gmail.com',
+    pass: process.env.GMAIL_PASS || 'srbo gcxp whgl ghcu',
   },
 });
 
@@ -25,12 +45,12 @@ app.post('/api/send-email', async (req, res) => {
     if (!to || !subject || !html) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: to, subject, html',
+        error: 'Missing required fields: to, subject, html'
       });
     }
 
     const info = await transporter.sendMail({
-      from: `"Ask Geo System" <${process.env.GMAIL_USER}>`,
+      from: '"Ask Geo System" <complete.anant@gmail.com>',
       to,
       subject,
       html,
@@ -41,14 +61,14 @@ app.post('/api/send-email', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      messageId: info.messageId,
+      messageId: info.messageId
     });
   } catch (error) {
     console.error('Error sending email:', error);
 
     return res.status(500).json({
       success: false,
-      error: error.message || 'Unknown email error',
+      error: error.message || 'Unknown email error'
     });
   }
 });
