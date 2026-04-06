@@ -4,50 +4,53 @@ import nodemailer from 'nodemailer';
 
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://askgeo.in',
-  'https://www.askgeo.in',
-  'https://ask-geo.onrender.com'
-];
-
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept']
-}));
-
-app.options('*', cors());
-
+// Enable CORS for your frontend
+app.use(cors());
+// 50mb limit is required for the large base64 PDF attachments
 app.use(express.json({ limit: '50mb' }));
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ ok: true, service: 'ask-geo-mailer' });
-});
-
+// Set up Nodemailer with Environment Variables
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER || 'complete.anant@gmail.com',
     pass: process.env.GMAIL_PASS || 'srbo gcxp whgl ghcu',
   },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
 });
 
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Transporter verification failed:', error);
+  } else {
+    console.log('Transporter is ready to send emails');
+  }
+});
+
+
+
 app.post('/api/send-email', async (req, res) => {
+  console.log('--- /api/send-email hit ---');
+
   try {
     const { to, subject, html, attachments = [] } = req.body;
 
+    console.log('Body received');
+    console.log('to:', to);
+    console.log('subject:', subject);
+    console.log('attachments count:', Array.isArray(attachments) ? attachments.length : 0);
+
     if (!to || !subject || !html) {
+      console.log('Missing required fields');
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: to, subject, html'
       });
     }
+
+    console.log('About to send mail...');
 
     const info = await transporter.sendMail({
       from: '"Ask Geo System" <complete.anant@gmail.com>',
@@ -57,14 +60,14 @@ app.post('/api/send-email', async (req, res) => {
       attachments,
     });
 
-    console.log('Email sent successfully:', info.messageId);
+    console.log('Mail sent successfully:', info.messageId);
 
     return res.status(200).json({
       success: true,
       messageId: info.messageId
     });
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error inside /api/send-email:', error);
 
     return res.status(500).json({
       success: false,
