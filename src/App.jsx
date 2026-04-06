@@ -5,56 +5,49 @@ import {
   ArrowRight, Phone, Mail, MapPin, Activity, Check,
   Target, Zap, Users, Calculator, BookOpen, Star, 
   ArrowUpRight, BarChart3, Quote, ChevronDown, ChevronsDown, RefreshCw,
-  Download
+  Download, Lock
 } from 'lucide-react';
 
-// --- BREVO API CONFIGURATION ---
-const BREVO_API_KEY = "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";
-const TARGET_EMAIL = "geoconsultant@gmail.com";
-const SENDER_EMAIL = "a71c63001@smtp-brevo.com";
+// --- GMAIL SMTP CONFIGURATION ---
+const GMAIL_USER = "complete.anant@gmail.com";
+const GMAIL_PASS = "srbo gcxp whgl ghcu";
+const TARGET_EMAIL = "complete.anant@gmail.com";
 
-const sendEmailViaBrevo = async (subject, htmlBody, attachments = []) => {
+const sendEmailViaGmail = async (subject, htmlBody, attachments = []) => {
   try {
-    // Brevo blocks direct browser requests via CORS to prevent API key exposure. 
-    // Using a public proxy here to allow the client-side prototype to work.
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://api.brevo.com/v3/smtp/email');
-    
-    // Map internal attachment format to Brevo's expected format
+    // Load SMTP.js dynamically to allow sending emails directly from the frontend
+    if (!window.Email) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://smtpjs.com/v3/smtp.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("SMTP.js blocked by browser or failed to load."));
+        document.head.appendChild(script);
+      });
+    }
+
     const formattedAttachments = attachments.map(att => ({
-      content: att.content,
-      name: att.filename
+      name: att.filename,
+      data: att.dataUri // SMTP.js expects the full data URI (data:application/pdf;base64,...)
     }));
 
-    const payload = {
-      sender: { name: "Ask Geo System", email: SENDER_EMAIL },
-      to: [{ email: TARGET_EMAIL, name: "Geo Consultant" }],
-      subject: subject,
-      htmlContent: htmlBody,
-    };
-
-    if (formattedAttachments.length > 0) {
-      payload.attachment = formattedAttachments;
-    }
-
-    const response = await fetch(proxyUrl, {
-      method: 'POST',
-      headers: {
-        'api-key': BREVO_API_KEY,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
+    const response = await window.Email.send({
+      Host : "smtp.gmail.com",
+      Username : GMAIL_USER,
+      Password : GMAIL_PASS,
+      To : TARGET_EMAIL,
+      From : GMAIL_USER,
+      Subject : subject,
+      Body : htmlBody,
+      Attachments : formattedAttachments.length > 0 ? formattedAttachments : undefined
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP Error: ${response.status}, details: ${errorText}`);
+    console.log('Gmail Delivery Status:', response);
+    if (response !== "OK") {
+      throw new Error(response);
     }
-    
-    const data = await response.json();
-    console.log('Brevo Delivery Status:', data);
   } catch (error) {
-    console.error('Brevo Delivery Error:', error);
+    console.error('Gmail Delivery Error:', error);
   }
 };
 
@@ -212,13 +205,15 @@ const GeneralContactModal = ({ isOpen, onClose, title }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsProcessing(true);
     
-    // --- INTEGRATED BREVO API ---
+    // --- INTEGRATED GMAIL API (BACKGROUND FIRE & FORGET) ---
+    // We do NOT await this, so the UI instantly resolves for the user 
+    // even if the script loading or SMTP connection is slow/blocked.
     const emailHtml = getBeautifulEmailTemplate(title, formData);
-    await sendEmailViaBrevo(`New Ask Geo Lead: ${title} - ${formData.name}`, emailHtml);
+    sendEmailViaGmail(`New Ask Geo Lead: ${title} - ${formData.name}`, emailHtml).catch(console.error);
 
     setTimeout(() => {
       setIsProcessing(false);
@@ -425,45 +420,46 @@ const generateReport = (config, leadData) => {
 
       // Dynamically load html2pdf from CDN
       if (!window.html2pdf) {
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
           script.onload = resolve;
+          script.onerror = () => reject(new Error("html2pdf.js blocked by browser or failed to load."));
           document.head.appendChild(script);
         });
       }
 
+      // Reduced scale to prevent the base64 from getting too massive
       const opt = {
         margin:       0,
         filename:     `${config.reportTitle.replace(/\s+/g, '_')}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        image:        { type: 'jpeg', quality: 0.80 }, 
+        html2canvas:  { scale: 1.5, useCORS: true }, 
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true } 
       };
 
       // Generate the PDF and get it as base64 string
       const targetElement = hiddenDiv.querySelector('#pdf-content');
       const pdfBase64DataUri = await window.html2pdf().set(opt).from(targetElement).outputPdf('datauristring');
-      const base64Content = pdfBase64DataUri.split(',')[1];
       
       document.body.removeChild(hiddenDiv); // Clean up
 
-      await sendEmailViaBrevo(
+      await sendEmailViaGmail(
         `Report Request: ${config.reportTitle} for ${leadData.name}`,
         emailHtmlBody,
-        [{ filename: opt.filename, content: base64Content }]
+        [{ filename: opt.filename, dataUri: pdfBase64DataUri }]
       );
 
     } catch (e) {
       console.error("PDF generation failed, sending email without attachment", e);
       // Fallback: Send email without attachment if PDF generation fails
       const fallbackEmailHtmlBody = getBeautifulEmailTemplate(`Report Download: ${config.reportTitle}`, leadData, [config.primaryMetric, ...config.secondaryMetrics]);
-      await sendEmailViaBrevo(`Report Request: ${config.reportTitle} for ${leadData.name}`, fallbackEmailHtmlBody);
+      await sendEmailViaGmail(`Report Request: ${config.reportTitle} for ${leadData.name}`, fallbackEmailHtmlBody);
     }
   };
 
   // Trigger non-blocking async function to send the email with attachment
-  sendReportViaEmail();
+  sendReportViaEmail().catch(console.error);
 };
 
 const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
@@ -483,6 +479,8 @@ const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.email) return;
     setIsProcessing(true);
+    
+    // Decoupled the UI from background logic to ensure it proceeds quickly
     setTimeout(() => {
       setIsProcessing(false);
       onDownloadComplete(formData);
@@ -756,9 +754,9 @@ const StepUpCalculatorWidget = () => {
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-500/80 uppercase mb-3">Accelerated Future Value</p>
-              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(futureValue)}</p>
+              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none">{formatCurrency(futureValue)}</p>
               
-              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
+              <button onClick={handleDownloadInitiate} className="w-full mt-8 py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Download Strategy Report</span>
               </button>
@@ -1269,7 +1267,7 @@ const ExtraEmiCalculatorWidget = () => {
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
                     <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by rate drop</p>
                     <p className="text-sm font-bold text-emerald-400 mb-1">{formatYM(safeTime(savedTimeRateDrop))}</p>
-                    <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedMoneyRateDrop))}</p>
+                    <p className="text-[9px] text-zinc-400">{formatShortAmt(safeMoney(savedTimeRateDrop))}</p>
                  </div>
                  <div className="bg-white/5 p-3 rounded-xl border border-white/10">
                     <p className="text-[8px] font-medium tracking-widest text-emerald-200 uppercase mb-1">Saved by prepay</p>
@@ -1414,7 +1412,7 @@ const SmartEmiCalculatorWidget = () => {
                 <Sparkles className="w-5 h-5 text-green-400 animate-pulse shrink-0" /> That's just {sipPercentageOfEmi}% of your EMI amount!
               </div>
               
-              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
+              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1 relative z-10">
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Download Strategy Report</span>
               </button>
@@ -1580,7 +1578,7 @@ const EarlyClosureWidget = () => {
                 </div>
               </div>
               
-              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1">
+              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1 relative z-10">
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Download Strategy Report</span>
               </button>
@@ -1820,7 +1818,7 @@ const GoalCalculatorWidget = () => {
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-emerald-400 uppercase mb-3">Required Monthly SIP</p>
               <p className="text-5xl sm:text-6xl md:text-7xl font-light text-white tracking-tight leading-none mb-8">{formatCurrency(requiredSip)}</p>
               
-              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1 relative z-10">
+              <button onClick={handleDownloadInitiate} className="w-full py-4 text-sm bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-medium tracking-wide transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:-translate-y-1 relative z-10 mt-8">
                 <Download className="w-4 h-4 animate-bounce" />
                 <span>Download Strategy Report</span>
               </button>
