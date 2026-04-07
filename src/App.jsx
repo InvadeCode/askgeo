@@ -1936,12 +1936,986 @@ const GoalCalculatorWidget = () => {
   );
 };
 
-// --- HOME PAGE COMPONENT ---
-const HomePage = ({ setCurrentPage, openContactModal }) => {
-  useSEO("Expert Financial Advisory", "Ask Geo is a premier financial advisory firm in Pune offering holistic wealth management, portfolio architecture, and precision financial calculators.", "home");
+// --- ABOUT PAGE COMPONENT ---
+const AboutPage = ({ setCurrentPage, openContactModal }) => {
+  useSEO("About Us", "Learn about Ask Geo Financial Services, our mission, and our founder Geo Thomas.", "about");
 
   return (
-    <>
+    <div className="pt-32 pb-10 animate-in fade-in duration-700 text-left bg-zinc-50">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-24">
+        <FadeIn direction="down">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
+            Driven by data. <br />
+            <span className="font-medium text-emerald-600">Defined by trust.</span>
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light max-w-3xl leading-relaxed mb-8">
+            Ask Geo was founded on a singular vision: to bring institutional-grade financial strategies to individual investors with absolute transparency.
+          </p>
+        </FadeIn>
+      </section>
+
+      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-24 border-y border-emerald-100/50">
+        <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <FadeIn direction="left">
+            <div className="aspect-square sm:aspect-[4/3] lg:aspect-square bg-white rounded-[2.5rem] p-8 sm:p-12 flex flex-col justify-end relative overflow-hidden group border border-zinc-100 shadow-2xl shadow-emerald-200/50 transition-shadow duration-700">
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-50/50 to-transparent group-hover:scale-105 transition-transform duration-700"></div>
+              <Quote className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-600/20 relative z-10 mb-8" strokeWidth={1}/>
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-light relative z-10 text-zinc-900 leading-tight">"Wealth creation shouldn't be a black box. Our goal is absolute clarity."</h3>
+            </div>
+          </FadeIn>
+          <FadeIn delay={200} direction="right">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Our Genesis</h2>
+            <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-5">
+              For years, the financial advisory industry has thrived on complexity, jargon, and hidden fees. Ask Geo was created to dismantle that complexity. 
+            </p>
+            <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
+              We realized that true financial freedom comes when clients deeply understand their portfolios. By combining advanced analytics with human empathy, we've built a platform where your goals are the only metrics that matter. We don't just manage money; we educate, empower, and elevate our investors.
+            </p>
+            <div className="flex gap-10 sm:gap-16 border-t border-zinc-200 pt-8">
+               <div className="group cursor-default">
+                 <p className="text-3xl sm:text-4xl font-medium text-emerald-600 mb-2 transition-transform duration-300">2015</p>
+                 <p className="text-[10px] sm:text-xs text-zinc-500 tracking-widest uppercase font-semibold">Established</p>
+               </div>
+               <div className="group cursor-default">
+                 <p className="text-3xl sm:text-4xl font-medium text-emerald-600 mb-2 transition-transform duration-300">Pune</p>
+                 <p className="text-[10px] sm:text-xs text-zinc-500 tracking-widest uppercase font-semibold">Headquarters</p>
+               </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="bg-zinc-50/50 py-24 px-6 sm:px-10 lg:px-16 xl:px-24">
+        <div className="w-full max-w-[1800px] mx-auto">
+          <FadeIn className="mb-12">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-4 text-zinc-900">The Ask Geo Pillars</h2>
+            <p className="text-base sm:text-lg text-zinc-500 font-light max-w-2xl">The non-negotiable principles that guide every portfolio decision we make.</p>
+          </FadeIn>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {[
+              { title: "Radical Transparency", desc: "No hidden loads, no opaque commissions. You see exactly what we see." },
+              { title: "Data-Backed", desc: "Emotions destroy wealth. We rely on quantitative models and analytical insights." },
+              { title: "Fiduciary Duty", desc: "Your interests always precede ours. We grow only when your portfolio grows." },
+              { title: "Holistic Planning", desc: "We look beyond mere returns, focusing on taxation, risk, and succession." }
+            ].map((item, idx) => (
+              <FadeIn key={idx} delay={idx * 150} direction="up" className="bg-white border border-zinc-200 p-8 sm:p-10 rounded-[2rem] hover:border-emerald-200 hover:shadow-xl hover:shadow-zinc-200 transition-all duration-500 group">
+                <div className="w-12 h-12 bg-zinc-100 text-emerald-600 rounded-xl flex items-center justify-center font-mono text-lg font-medium mb-6 group-hover:bg-emerald-100 transition-colors duration-500">
+                  0{idx + 1}
+                </div>
+                <h4 className="text-xl sm:text-2xl font-medium mb-3 text-zinc-900">{item.title}</h4>
+                <p className="text-zinc-500 font-light text-sm sm:text-base leading-relaxed">{item.desc}</p>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-green-50/30 px-6 sm:px-10 lg:px-16 xl:px-24 py-24 border-t border-green-100/50">
+         <div className="w-full max-w-[1800px] mx-auto flex flex-col lg:flex-row gap-12 lg:gap-20 items-center">
+            <FadeIn direction="left" className="lg:w-1/3 w-full">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-8 text-zinc-900">Leadership</h2>
+              <div className="aspect-[3/4] sm:aspect-[4/5] lg:aspect-[3/4] bg-white rounded-[2rem] p-2 relative overflow-hidden group shadow-2xl shadow-green-100 border border-green-100">
+                 <div className="w-full h-full rounded-[1.5rem] overflow-hidden relative">
+                   <img src="https://static.wixstatic.com/media/548938_b7923b7ddd8e422fb65978d9d97184a2~mv2.jpg" alt="Geo Thomas" className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-1000" />
+                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-900/10 to-transparent"></div>
+                   <div className="absolute bottom-8 left-8 right-8 z-10">
+                      <h3 className="text-2xl sm:text-3xl font-medium text-white mb-1">Geo Thomas</h3>
+                      <p className="text-emerald-400 text-[10px] sm:text-xs font-bold tracking-widest uppercase">Founder & Chief Advisor</p>
+                   </div>
+                 </div>
+              </div>
+            </FadeIn>
+            <FadeIn delay={200} direction="right" className="lg:w-2/3 flex flex-col justify-center">
+              <Quote className="w-12 h-12 text-green-300 mb-8" strokeWidth={1} />
+              <p className="text-xl sm:text-2xl lg:text-3xl font-light leading-relaxed text-zinc-900 mb-8">
+                "I started Ask Geo because I saw a massive gap between what institutions were doing to grow wealth and what retail investors were being sold. I wanted to level the playing field."
+              </p>
+              <p className="text-sm sm:text-base lg:text-lg font-light text-zinc-600 leading-relaxed mb-6">
+                Geo brings over 15 years of deep market experience, holding AMFI certifications and a profound understanding of macroeconomic cycles. His approach combines rigorous mathematical modeling with a deep understanding of human behavioral finance.
+              </p>
+              <p className="text-sm sm:text-base lg:text-lg font-light text-zinc-600 leading-relaxed">
+                Under his leadership, Ask Geo has grown to manage over 133K Crore in AUM, maintaining an impressive historic XIRR benchmark by staying disciplined, avoiding market noise, and focusing strictly on compounding.
+              </p>
+            </FadeIn>
+         </div>
+      </section>
+    </div>
+  );
+};
+
+// --- SERVICES PAGE COMPONENT ---
+const ServicesPage = ({ setCurrentPage, openContactModal }) => {
+  useSEO("Our Services", "Comprehensive financial architecture, wealth management, and portfolio advisory.", "services");
+
+  return (
+    <div className="pt-32 pb-0 animate-in fade-in duration-700 text-left bg-zinc-50">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-24">
+        <FadeIn direction="down">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
+            Comprehensive <br />
+            <span className="font-medium text-emerald-600">Financial Architecture.</span>
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light max-w-3xl leading-relaxed mb-8">
+            We don't just pick funds. We build robust, tax-efficient, and inflation-beating systems tailored to your exact life stage.
+          </p>
+        </FadeIn>
+      </section>
+
+      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 border-y border-emerald-100/50">
+        <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <FadeIn direction="right" className="order-2 lg:order-1">
+            <div className="w-16 h-16 bg-white border border-emerald-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
+              <Briefcase className="w-8 h-8 text-emerald-600" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Wealth Management</h2>
+            <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
+              Our core offering. We look at your entire financial landscape—assets, liabilities, cash flow, and goals—to engineer a comprehensive strategy that preserves capital while seeking aggressive growth where appropriate.
+            </p>
+            <ul className="space-y-4 mb-10">
+              {['Goal-based SIP structuring', 'Lumpsum deployment strategies', 'Asset allocation modeling', 'Retirement corpus planning'].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
+              ))}
+            </ul>
+            <GeoButton onClick={() => openContactModal('Wealth Management')} icon={ArrowRight}>
+              Request Detailed Strategy
+            </GeoButton>
+          </FadeIn>
+          <FadeIn delay={200} direction="left" className="order-1 lg:order-2">
+            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-emerald-100 relative overflow-hidden shadow-2xl shadow-emerald-100/50 group">
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
+               <PieChart className="absolute -bottom-10 -right-10 w-72 h-72 text-emerald-50/80 transition-transform duration-1000" strokeWidth={0.5} />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-emerald-100/50 rounded-full blur-2xl animate-pulse"></div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="bg-green-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28">
+        <div className="max-w-[1800px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <FadeIn direction="right">
+            <div className="aspect-[4/3] bg-white rounded-[2.5rem] border border-green-100 relative overflow-hidden shadow-2xl shadow-green-100/50 group">
+               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-green-100/50 to-transparent group-hover:scale-105 transition-transform duration-1000"></div>
+               <TrendingUp className="absolute -top-10 -left-10 w-72 h-72 text-green-50/80 transition-transform duration-1000" strokeWidth={0.5} />
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-green-100/50 rounded-full blur-2xl animate-pulse"></div>
+            </div>
+          </FadeIn>
+          <FadeIn delay={200} direction="left">
+            <div className="w-16 h-16 bg-white border border-green-100 rounded-2xl flex items-center justify-center mb-8 shadow-sm">
+              <Activity className="w-8 h-8 text-green-600" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Portfolio Management</h2>
+            <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed mb-8">
+              For High Net Worth Individuals (HNIs) requiring active oversight. We utilize our advanced insights alongside macro-economic research to actively rebalance and optimize your exposure to Equity, Debt, and Alternative assets.
+            </p>
+            <ul className="space-y-4 mb-10">
+              {['Active ETF & Direct Equity advisory', 'Dynamic debt fund rotation', 'Quarterly rebalancing', 'Tax-loss harvesting'].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-zinc-800 font-medium text-sm sm:text-base"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> {item}</li>
+              ))}
+            </ul>
+            <GeoButton onClick={() => openContactModal('Portfolio Management')} icon={ArrowRight}>
+              Explore PMS Capabilities
+            </GeoButton>
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="bg-zinc-50/50 py-24 px-6 sm:px-10 lg:px-16 xl:px-24 border-t border-zinc-200/50">
+        <div className="w-full max-w-[1800px] mx-auto">
+          <FadeIn direction="up" className="mb-16 max-w-3xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Our Onboarding Protocol</h2>
+            <p className="text-sm sm:text-base lg:text-lg text-zinc-600 font-light leading-relaxed">A systematic, friction-free process designed to transition you into a fully optimized portfolio within weeks.</p>
+          </FadeIn>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+             <div className="hidden lg:block absolute top-12 left-0 w-full h-px bg-zinc-200 z-0"></div>
+             {[
+               { step: "01", title: "Discovery", desc: "A deep dive into your current assets, liabilities, and aspirations." },
+               { step: "02", title: "Audit", desc: "Our engine analyzes your existing portfolio for inefficiencies and hidden risks." },
+               { step: "03", title: "Architecture", desc: "We present a mathematical, newly structured portfolio blueprint." },
+               { step: "04", title: "Execution", desc: "Seamless deployment and the start of 24/7 active monitoring." }
+             ].map((item, i) => (
+               <FadeIn key={i} delay={i * 200} direction="zoom" className="relative z-10 bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-xl shadow-zinc-200/30 transition-transform duration-500">
+                 <div className="w-14 h-14 bg-emerald-600 shadow-lg shadow-emerald-600/30 text-white rounded-2xl flex items-center justify-center text-lg font-bold mb-6">{item.step}</div>
+                 <h4 className="text-xl font-medium mb-3 text-zinc-900">{item.title}</h4>
+                 <p className="text-zinc-500 font-light text-base leading-relaxed">{item.desc}</p>
+               </FadeIn>
+             ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// --- BLOG POST DETAIL PAGE ---
+const BlogPostPage = ({ post, onBack }) => {
+  useSEO(post.title, post.content.substring(0, 150) + "...", `insights/${post.title.replace(/\s+/g, '-').toLowerCase()}`);
+
+  return (
+    <article className="pt-32 pb-24 animate-in slide-in-from-right duration-500 text-left bg-white min-h-screen">
+      <div className="max-w-[800px] mx-auto px-6 sm:px-10 lg:px-16">
+        <button onClick={onBack} className="flex items-center gap-2 text-zinc-500 hover:text-emerald-600 font-medium text-sm mb-10 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Insights
+        </button>
+
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6">
+            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{post.category}</span>
+            <span className="text-sm text-zinc-500 font-medium">{post.date || new Date(post.publishedAt).toLocaleDateString()}</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light text-zinc-900 tracking-tight leading-tight mb-8">
+            {post.title}
+          </h1>
+        </div>
+
+        <div className="prose prose-zinc prose-lg max-w-none font-light leading-relaxed text-zinc-700">
+          {/* Simple paragraph renderer assuming generic text content for now */}
+          {post.content.split('\n').map((paragraph, idx) => (
+             paragraph.trim() ? <p key={idx} className="mb-6">{paragraph}</p> : null
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+};
+
+// --- INSIGHTS PAGE COMPONENT ---
+const InsightsPage = () => {
+  useSEO("Market Insights", "Stay ahead of the curve with our latest market analyses and economic updates.", "insights");
+  
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const mockArticles = [
+    { 
+      title: "The Impact of Global Rates on Indian Equities", 
+      date: "April 2026", 
+      category: "Macroeconomics",
+      content: "The Reserve Bank of India has maintained a distinct posture relative to global central banks. As the Federal Reserve contemplates prolonged elevated rates, Indian markets are digesting the implications for foreign institutional flows.\n\nHistorically, a tightening global liquidity environment creates short-term volatility in emerging markets. However, the underlying domestic consumption story in India remains robust. Earnings growth in the mid-cap sector shows resilience despite external headwinds.\n\nInvestors must look beyond immediate rate announcements and focus on sector-specific fundamentals. Banking and infrastructure are well-positioned to weather the storm, provided corporate balance sheets maintain their current deleveraged status."
+    },
+    { 
+      title: "Debt Market Opportunities in a Shifting Cycle", 
+      date: "March 2026", 
+      category: "Debt Strategy",
+      content: "The debt market is presenting unique opportunities that haven't been seen in the last decade. As we approach what many analysts believe is the peak of the interest rate cycle, locking in yields has become a primary strategy for conservative portfolios.\n\nTarget maturity funds are offering exceptional predictability. By matching your investment horizon with the maturity profile of the fund, you effectively immunize your portfolio against interest rate risk while capturing current high yields.\n\nWe recommend a staggered approach to building long-term fixed income assets, utilizing a mix of sovereign bonds and high-quality corporate paper."
+    },
+    { 
+      title: "Decoding the Latest Union Budget Implications", 
+      date: "February 2026", 
+      category: "Taxation",
+      content: "The recent Union Budget has introduced several structural changes that directly impact how wealth is compounded and taxed. The most significant shift lies in the treatment of capital gains across different asset classes.\n\nThe harmonization of holding periods for equity and debt instruments alters the traditional asset allocation math. Investors can no longer rely solely on historical tax arbitrage when choosing between mutual fund categories.\n\nAt Ask Geo, our models have been recalibrated to account for these new fiscal realities, ensuring that post-tax returns—the only returns that truly matter—are optimized for every client."
+    },
+    { 
+      title: "Why Flexi-Cap Funds Are Gaining Traction", 
+      date: "January 2026", 
+      category: "Mutual Funds",
+      content: "Flexi-cap funds offer fund managers the ultimate mandate: go where the value is. Unlike rigidly defined large-cap or small-cap funds, this category allows for dynamic shifting across market capitalizations based on real-time valuations.\n\nIn a market characterized by rapid sector rotation, this agility is paramount. When large caps become overvalued, a flexi-cap manager can seamlessly pivot to under-researched mid-caps without requiring the investor to manually trigger tax-inefficient rebalancing.\n\nHowever, manager selection is crucial. The freedom to roam requires exceptional stock-picking acumen."
+    },
+    { 
+      title: "Understanding Systematic Transfer Plans (STP)", 
+      date: "December 2025", 
+      category: "Wealth Basics",
+      content: "A Systematic Transfer Plan (STP) is an elegant solution to a common psychological hurdle: deploying a large lumpsum of cash in a volatile market.\n\nInstead of attempting to time the market—a statistically flawed endeavor—an STP allows you to park your capital in a stable, low-risk debt fund. From there, a fixed amount is systematically transferred into an equity fund every month.\n\nThis achieves two things: your parked capital earns a higher return than a savings account, and your equity deployment benefits from rupee-cost averaging, mitigating the risk of entering the market at a peak."
+    },
+    { 
+      title: "The Rise of Passive Investing in India", 
+      date: "November 2025", 
+      category: "ETFs",
+      content: "Passive investing—specifically via Index Funds and ETFs—has crossed a critical inflection point in the Indian market. As the market matures and information asymmetry decreases, generating pure 'alpha' (outperforming the benchmark) in the large-cap space has become increasingly difficult.\n\nInstitutional investors recognized this trend years ago, and retail investors are finally catching up. The mathematical advantage of ultra-low expense ratios compounds massively over a 10 to 20-year horizon.\n\nWhile active management remains vital in the mid and small-cap space where inefficiencies still exist, a core holding of low-cost passive funds is now standard in modern portfolio architecture."
+    }
+  ];
+
+  useEffect(() => {
+    const fetchSanityPosts = async () => {
+      // -------------------------------------------------------------
+      // TO THE DEVELOPER / OWNER: 
+      // Replace 'YOUR_PROJECT_ID' with your actual Sanity Project ID.
+      // -------------------------------------------------------------
+      const PROJECT_ID = '3dj8otg2'; 
+      const DATASET = 'production';
+      const TOKEN = 'skhLy8uKD8yG1bW5jhXInYnfK3vqujACmLldXRZ8rAXJRAsr4wMfzj3BpgZADiPMnJ60WNJWCoN5C2s5SvVcTjycg8JbVbf8qkLP2PW2CUzy8DFh98pE4xCFG1NNmzZRbbnl5g8UcNlKc0otUWFT6T0wToAIh12qmVYXjCuUU4mwhicT4Mgn';
+
+      if (PROJECT_ID === 'YOUR_PROJECT_ID') {
+         // Using beautifully formatted mock data until project ID is updated
+         setPosts(mockArticles);
+         setIsLoading(false);
+         return;
+      }
+
+      try {
+        // Simple GROQ query to fetch posts. Assuming a basic standard schema.
+        const query = encodeURIComponent('*[_type == "post"] | order(publishedAt desc) { title, publishedAt, "category": categories[0]->title, "content": body[0].children[0].text }');
+        const url = `https://${PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/${DATASET}?query=${query}`;
+        
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${TOKEN}` }
+        });
+        
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const data = await response.json();
+        
+        if (data.result && data.result.length > 0) {
+          setPosts(data.result);
+        } else {
+           setPosts(mockArticles);
+        }
+      } catch (error) {
+        console.error("Sanity fetch failed. Defaulting to fallback articles.", error);
+        setPosts(mockArticles);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSanityPosts();
+  }, []);
+
+  if (selectedPost) {
+    return <BlogPostPage post={selectedPost} onBack={() => setSelectedPost(null)} />;
+  }
+
+  return (
+    <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16">
+        <FadeIn direction="down">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tighter text-zinc-950 mb-6">
+            Market <span className="font-medium text-emerald-600">Insights</span>
+          </h1>
+          <p className="text-lg text-zinc-500 font-light max-w-3xl mb-12 leading-relaxed">
+            Stay ahead of the curve with our latest market analyses, economic updates, and strategic investment perspectives.
+          </p>
+        </FadeIn>
+
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Activity className="w-8 h-8 text-emerald-500 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {posts.map((article, idx) => (
+              <FadeIn key={idx} delay={idx * 100} direction="up">
+                <div 
+                  onClick={() => setSelectedPost(article)}
+                  className="bg-white p-8 rounded-[2rem] border border-zinc-200 shadow-lg shadow-zinc-200/30 hover:border-emerald-300 transition-colors duration-300 group cursor-pointer flex flex-col h-full"
+                >
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">{article.category}</span>
+                    <span className="text-xs text-zinc-400 font-medium">{article.date || new Date(article.publishedAt).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-zinc-900 mb-4 leading-snug group-hover:text-emerald-700 transition-colors">{article.title}</h3>
+                  <div className="mt-auto pt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-emerald-600 transition-colors">
+                    Read Analysis <ArrowUpRight className="w-4 h-4 ml-1 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+// --- CONTACT PAGE COMPONENT ---
+const ContactPage = () => {
+  useSEO("Contact Ask Geo", "Get in touch with Ask Geo Financial Services for expert wealth management.", "contact");
+
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', subject: 'General Enquiry', message: '' });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    try {
+      const emailHtml = getBeautifulEmailTemplate(`Contact Form: ${formData.subject}`, formData);
+      await sendEmailViaBackend(`Ask Geo Contact: ${formData.subject} - ${formData.name}`, emailHtml);
+      setIsSuccess(true);
+      setFormData({ name: '', phone: '', email: '', subject: 'General Enquiry', message: '' });
+      setTimeout(() => setIsSuccess(false), 5000);
+    } catch (error) {
+      console.error("Contact email failed:", error);
+      alert(`Message failed to send: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24">
+          <FadeIn direction="right">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tighter text-zinc-950 mb-6 leading-tight">
+              Let's secure your <br/><span className="font-medium text-emerald-600">financial future.</span>
+            </h1>
+            <p className="text-lg text-zinc-500 font-light mb-12 leading-relaxed max-w-lg">
+              Whether you are looking to restructure your existing portfolio, start fresh, or need guidance on specific financial goals, we are here to help.
+            </p>
+            
+            <div className="space-y-8">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
+                  <Mail className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Email Us</p>
+                  <p className="text-zinc-900 font-medium">geoconsultant@gmail.com</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
+                  <Phone className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Call Us</p>
+                  <p className="text-zinc-900 font-medium">+91 99606 24271</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shadow-sm shrink-0">
+                  <MapPin className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Visit Us</p>
+                  <p className="text-zinc-900 font-medium max-w-xs leading-relaxed">Jai Ganesh Vision, B Wing, BR-2, Office No. 319, Akurdi, Pune - 411035</p>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={200} direction="left">
+            <div className="bg-white p-8 sm:p-12 rounded-[2.5rem] border border-zinc-200 shadow-2xl shadow-zinc-200/50">
+              <h3 className="text-2xl font-medium text-zinc-900 mb-8">Send a Message</h3>
+              {isSuccess ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center animate-in zoom-in duration-300 bg-emerald-50 rounded-2xl border border-emerald-100">
+                   <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-emerald-100/50">
+                     <Check className="w-8 h-8" strokeWidth={2} />
+                   </div>
+                   <h4 className="text-xl font-medium text-zinc-900 mb-2">Message Sent</h4>
+                   <p className="text-sm text-zinc-500">Thank you. Our advisory team will contact you shortly.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
+                      <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="John Doe" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Phone</label>
+                      <input required type="tel" maxLength="10" pattern="[0-9]{10}" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="10-digit mobile" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Email Address</label>
+                    <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white" placeholder="john@example.com" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Subject</label>
+                    <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white">
+                      <option value="General Enquiry">General Enquiry</option>
+                      <option value="Wealth Management">Wealth Management</option>
+                      <option value="Portfolio Management">Portfolio Management</option>
+                      <option value="Schedule a Consultation">Schedule a Consultation</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-2">Message</label>
+                    <textarea required rows="4" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white resize-none" placeholder="How can we help you?"></textarea>
+                  </div>
+                  <GeoButton type="submit" disabled={isProcessing} className="mt-6" wFull icon={isProcessing ? Activity : Send}>
+                    {isProcessing ? 'Sending...' : 'Send Message'}
+                  </GeoButton>
+                </form>
+              )}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// --- CALCULATORS PAGE COMPONENT ---
+const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
+  useSEO("Financial Tools & Calculators", "Use our advanced SIP, Lumpsum, and Retirement calculators to plan your financial future.", "tools");
+  
+  const [activeTab, setActiveTab] = useState('sip');
+
+  const tabs = [
+    { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
+    { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
+    { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
+    { id: 'lumpsum', name: 'Lumpsum', icon: Briefcase },
+    { id: 'emivssip', name: 'EMI vs SIP', icon: PieChart },
+    { id: 'emimatch', name: 'EMI Match SIP', icon: Activity },
+    { id: 'prepayment', name: 'EMI Prepayment', icon: ChevronsDown },
+    { id: 'smartemi', name: 'Zero-Cost EMI', icon: Sparkles },
+    { id: 'earlyclosure', name: 'Early Debt Freedom', icon: ShieldCheck },
+    { id: 'fire', name: 'F.I.R.E Target', icon: Map },
+    { id: 'goal', name: 'Goal Planner', icon: Target },
+  ];
+
+  return (
+    <div className="pt-32 pb-0 animate-in fade-in duration-700 text-left bg-zinc-50">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
+        <FadeIn direction="down" className="max-w-4xl">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
+            The Math of <br />
+            <span className="font-medium text-emerald-600">Wealth Creation.</span>
+          </h1>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-500 font-light leading-relaxed mb-8">
+            A suite of advanced, precision tools designed to help you visualize compounding, plan for retirement, and map out your definitive path to financial freedom.
+          </p>
+        </FadeIn>
+      </section>
+
+      <section className="bg-white px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-12 lg:py-16 border-y border-zinc-200/50">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="bg-white border border-zinc-200/60 rounded-[2.5rem] p-6 sm:p-10 lg:p-12 overflow-hidden shadow-2xl shadow-zinc-200/50">
+            <FadeIn delay={100} direction="up" className="mb-12">
+              <div className="flex overflow-x-auto hide-scrollbar gap-3 pb-4 snap-x border-b border-zinc-100">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`snap-start whitespace-nowrap flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                      activeTab === tab.id 
+                        ? 'bg-[#18181b] text-white border-[#18181b] shadow-lg' 
+                        : 'bg-zinc-50 text-zinc-500 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900 hover:bg-white'
+                    }`}
+                  >
+                    <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'animate-pulse' : ''}`} strokeWidth={activeTab === tab.id ? 2 : 1.5} />
+                    {tab.name}
+                  </button>
+                ))}
+              </div>
+            </FadeIn>
+
+            <div className="min-h-[550px]">
+              {activeTab === 'sip' && <SipCalculatorWidget />}
+              {activeTab === 'stepup' && <StepUpCalculatorWidget />}
+              {activeTab === 'stp' && <StpToSipCalculatorWidget />}
+              {activeTab === 'lumpsum' && <LumpsumCalculatorWidget />}
+              {activeTab === 'emivssip' && <EmiVsSipCalculatorWidget />}
+              {activeTab === 'emimatch' && <EmiMatchSipWidget />}
+              {activeTab === 'prepayment' && <ExtraEmiCalculatorWidget />}
+              {activeTab === 'smartemi' && <SmartEmiCalculatorWidget />}
+              {activeTab === 'earlyclosure' && <EarlyClosureWidget />}
+              {activeTab === 'fire' && <FireCalculatorWidget />}
+              {activeTab === 'goal' && <GoalCalculatorWidget />}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-emerald-50/40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto py-20 lg:py-28 flex flex-col items-start text-left">
+        <FadeIn direction="up" className="flex flex-col items-start max-w-2xl">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
+            <Calculator className="w-8 h-8 text-emerald-600" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tighter mb-6 text-zinc-900">Numbers look good?</h2>
+          <p className="text-zinc-600 font-light mb-10 text-base sm:text-lg leading-relaxed">Calculators show possibilities. Our experts turn them into realities. Let Ask Geo build the portfolio that executes your math.</p>
+          <GeoButton onClick={() => openContactModal('Execute My Plan')} icon={ArrowRight}>
+            Schedule a Strategy Session
+          </GeoButton>
+        </FadeIn>
+      </section>
+    </div>
+  );
+};
+
+// --- LEGAL PAGE COMPONENT ---
+const LegalPage = ({ title }) => {
+  useSEO(title, `Ask Geo Financial Services - ${title}`, `legal`);
+
+  const today = "April 6, 2026";
+  const address = "Jai Ganesh Vision, B Wing, BR-2, Office No. 319, Akurdi, Pune - 411035";
+  const email = "geoconsultant@gmail.com";
+  const phone = "+91 99606 24271";
+
+  const renderContent = () => {
+    switch (title) {
+      case 'Terms of Service':
+        return (
+          <div className="space-y-4">
+            <p className="font-medium">Effective Date: {today}<br/>Last Updated: {today}</p>
+            <p>Welcome to Ask Geo (“Ask Geo,” “we,” “us,” or “our”). These Terms of Service govern your access to and use of our website, tools, calculators, reports, content, and related services.</p>
+            <p>By accessing or using this website, you agree to be bound by these Terms. If you do not agree, please do not use this website.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">1. Scope of Services</h3>
+            <p>Ask Geo provides financial information tools, planning calculators, educational content, consultation request forms, and related digital resources. The website may allow users to generate reports, projections, and illustrative outputs based on information entered by them.</p>
+            <p>Unless expressly stated otherwise in writing, the website content and tools are intended for general informational and educational purposes only and do not, by themselves, constitute investment advice, investment recommendation, assurance of returns, solicitation, or an offer to buy or sell any security, financial product, or service.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">2. Eligibility</h3>
+            <p>You may use this website only if you are competent to contract under applicable law and are at least 18 years of age, or are using the website under the supervision of a parent, guardian, or authorized representative.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">3. User Information</h3>
+            <p>You may be asked to provide information such as your name, email address, and phone number in order to request a consultation, download a report, or interact with our services. You agree that all information you provide is true, accurate, current, and complete.</p>
+            <p>You are responsible for ensuring that the details you submit are correct. We are not liable for issues arising from inaccurate, incomplete, or outdated information submitted by you.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">4. Use of Calculators, Reports, and Projections</h3>
+            <p>Any calculator, report, blueprint, estimate, projection, or output made available through this website is illustrative only. Such outputs are based on assumptions, user inputs, formulas, and market-linked estimates, all of which may differ materially from actual outcomes.</p>
+            <p>You acknowledge that:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>projected returns are not guaranteed,</li>
+              <li>market-linked products are subject to risk,</li>
+              <li>actual performance may vary,</li>
+              <li>tax outcomes depend on your personal circumstances and prevailing law,</li>
+              <li>calculator outputs should not be the sole basis for financial decisions.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">5. No Professional Relationship Created by Website Use</h3>
+            <p>Your use of the website, submission of a form, receipt of an email, or download of a report does not automatically create an adviser-client, analyst-client, fiduciary, brokerage, portfolio management, or other regulated professional relationship unless specifically agreed in writing.</p>
+            <p>Any formal engagement, if offered, shall be subject to separate written terms.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">6. Permitted Use</h3>
+            <p>You agree not to:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>use the website for any unlawful purpose,</li>
+              <li>interfere with website security or functionality,</li>
+              <li>attempt unauthorized access to systems or data,</li>
+              <li>scrape, copy, reproduce, republish, or commercially exploit website content without written permission,</li>
+              <li>upload malicious code, spam, or misleading information,</li>
+              <li>misuse the website to impersonate another person or entity.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">7. Intellectual Property</h3>
+            <p>All website content, including text, design, logos, graphics, layouts, code, calculators, reports, downloadable materials, and branding, is owned by or licensed to Ask Geo and is protected by applicable intellectual property laws.</p>
+            <p>You may view and use the website for personal, non-commercial use only. No right, title, or interest in any intellectual property is transferred to you.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">8. Third-Party Services</h3>
+            <p>The website may use third-party tools, hosting providers, analytics services, email delivery providers, form handlers, payment tools, or integrations. Your use of such services may also be subject to their terms and privacy practices.</p>
+            <p>We are not responsible for third-party websites, services, content, or policies.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">9. Communications</h3>
+            <p>By submitting your contact details, you consent to being contacted by Ask Geo through phone, SMS, WhatsApp, email, or other reasonable communication channels in connection with your enquiry, requested report, consultation, or related service updates, subject to applicable law.</p>
+            <p>You may opt out of non-essential communications by contacting us.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">10. No Warranty</h3>
+            <p>The website and all content, tools, and services are provided on an “as is” and “as available” basis. To the maximum extent permitted by law, Ask Geo disclaims all warranties, express or implied, including warranties of accuracy, completeness, merchantability, fitness for a particular purpose, availability, non-infringement, and uninterrupted access.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">11. Limitation of Liability</h3>
+            <p>To the fullest extent permitted by law, Ask Geo shall not be liable for any direct, indirect, incidental, consequential, special, punitive, or exemplary damages arising out of or related to:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>your use of or inability to use the website,</li>
+              <li>reliance on any content, report, projection, or calculator output,</li>
+              <li>errors, delays, interruptions, or system failures,</li>
+              <li>unauthorized access to data,</li>
+              <li>decisions taken by you based on website content.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">12. Indemnity</h3>
+            <p>You agree to indemnify and hold harmless Ask Geo, its owners, affiliates, employees, representatives, and service providers from and against any claims, liabilities, damages, losses, costs, or expenses arising from your misuse of the website, your breach of these Terms, or your violation of applicable law or third-party rights.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">13. Suspension or Termination</h3>
+            <p>We reserve the right to suspend, restrict, or terminate access to the website or any part of it at any time, without prior notice, if we believe you have violated these Terms or if such action is required for legal, operational, or security reasons.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">14. Changes to These Terms</h3>
+            <p>We may modify these Terms from time to time. The revised version will be posted on this page with an updated effective date. Continued use of the website after such changes constitutes acceptance of the revised Terms.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">15. Governing Law and Jurisdiction</h3>
+            <p>These Terms shall be governed by and construed in accordance with the laws of India. Subject to applicable law, the courts at Pune, Maharashtra shall have exclusive jurisdiction over disputes arising from or relating to these Terms.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">16. Contact</h3>
+            <p>For questions regarding these Terms, please contact:</p>
+            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
+          </div>
+        );
+      case 'Privacy Policy':
+        return (
+          <div className="space-y-4">
+            <p className="font-medium">Effective Date: {today}<br/>Last Updated: {today}</p>
+            <p>Ask Geo values your privacy and is committed to handling your personal data responsibly and lawfully.</p>
+            <p>This Privacy Policy explains how we collect, use, store, disclose, and protect your personal data when you use our website, fill in forms, request consultations, use calculators, or download reports.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">1. Information We Collect</h3>
+            <p>We may collect the following categories of personal data:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>name,</li>
+              <li>email address,</li>
+              <li>mobile number,</li>
+              <li>enquiry details,</li>
+              <li>information you voluntarily submit through forms,</li>
+              <li>calculator inputs and planning-related inputs,</li>
+              <li>communication preferences,</li>
+              <li>technical information such as IP address, browser type, device type, pages visited, and usage logs,</li>
+              <li>cookies and similar tracking information.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">2. How We Collect Information</h3>
+            <p>We collect information:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>directly from you when you fill in forms or contact us,</li>
+              <li>when you use our calculators, reports, or interactive tools,</li>
+              <li>automatically through cookies, analytics, and website technologies,</li>
+              <li>from communication records when you contact us by email, phone, or other channels.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">3. Purpose of Use</h3>
+            <p>We may use your information for the following purposes:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>to respond to enquiries,</li>
+              <li>to provide requested reports, consultations, or service information,</li>
+              <li>to operate calculators and generate outputs,</li>
+              <li>to improve website performance and user experience,</li>
+              <li>to understand user behaviour and engagement,</li>
+              <li>to send service-related communications,</li>
+              <li>to send marketing or promotional communications where permitted,</li>
+              <li>to maintain internal records,</li>
+              <li>to comply with legal, regulatory, or lawful business requirements,</li>
+              <li>to prevent fraud, abuse, or misuse.</li>
+            </ul>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">4. Legal Basis and Consent</h3>
+            <p>By submitting your details through the website, you consent to our processing of your personal data for the purposes described in this Privacy Policy, subject to applicable law. Where required, we will seek specific consent for particular uses.</p>
+            <p>For users in India, personal data processing is subject to the Digital Personal Data Protection Act, 2023 and applicable rules.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">5. Cookies and Tracking Technologies</h3>
+            <p>We may use cookies, pixels, session tools, analytics tools, and similar technologies to:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>keep the website functioning properly,</li>
+              <li>understand website traffic and usage patterns,</li>
+              <li>improve performance,</li>
+              <li>support remarketing or communication workflows where applicable.</li>
+            </ul>
+            <p>You may manage cookies through your browser settings, although disabling certain cookies may affect functionality.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">6. Sharing of Information</h3>
+            <p>We do not sell your personal data. We may share your information only where reasonably necessary with:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>technology and hosting providers,</li>
+              <li>email, CRM, analytics, and communication service providers,</li>
+              <li>professional advisers,</li>
+              <li>legal, regulatory, or governmental authorities where required by law,</li>
+              <li>business successors in the event of restructuring, merger, or transfer.</li>
+            </ul>
+            <p>Any such sharing will be limited to what is reasonably necessary.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">7. Data Retention</h3>
+            <p>We retain personal data only for as long as reasonably necessary for the purpose for which it was collected, or as required by law, internal compliance, dispute resolution, recordkeeping, or legitimate business needs.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">8. Data Security</h3>
+            <p>We implement reasonable technical, administrative, and organisational safeguards to protect personal data from unauthorized access, misuse, loss, disclosure, or alteration. However, no online transmission or storage system is completely secure, and we cannot guarantee absolute security.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">9. Your Rights</h3>
+            <p>Subject to applicable law, you may have the right to:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>request access to your personal data,</li>
+              <li>request correction or updating of inaccurate data,</li>
+              <li>withdraw consent where processing is based on consent,</li>
+              <li>request deletion of data, subject to legal or operational retention requirements,</li>
+              <li>object to or restrict certain processing,</li>
+              <li>request information about how your data is being used.</li>
+            </ul>
+            <p>To exercise these rights, contact us using the details below.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">10. Marketing Communications</h3>
+            <p>If you provide your contact details, we may send you information about our services, updates, or follow-ups relevant to your enquiry. You may opt out of non-essential marketing communications at any time by contacting us or using the unsubscribe option where available.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">11. Third-Party Links</h3>
+            <p>Our website may contain links to third-party websites or services. We are not responsible for their privacy practices, content, or security. Please review their policies separately.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">12. Children’s Privacy</h3>
+            <p>This website is not directed to children. We do not knowingly collect personal data from minors without appropriate authorization.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">13. Changes to This Policy</h3>
+            <p>We may update this Privacy Policy from time to time. The updated version will be posted on this page with a revised effective date.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">14. Contact for Privacy Matters</h3>
+            <p>If you have questions, requests, or complaints relating to privacy or data protection, contact:</p>
+            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}<br/>Address: {address}</p>
+          </div>
+        );
+      case 'Disclosure':
+        return (
+          <div className="space-y-4">
+            <p className="font-medium">Effective Date: {today}</p>
+            <p>The information, calculators, projections, downloadable reports, and materials provided on this website are for general informational and educational purposes only.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">1. No Investment Advice</h3>
+            <p>Nothing on this website should be construed as personalized investment advice, investment recommendation, research report, assurance of returns, portfolio advice, tax advice, legal advice, or an invitation or solicitation to buy, sell, or hold any financial product, instrument, or security.</p>
+            <p>Any financial decision should be taken only after considering your own objectives, risk profile, liquidity needs, tax position, and where appropriate, after consulting a duly qualified and appropriately registered professional.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">2. Illustrative Nature of Outputs</h3>
+            <p>All calculator outputs, projections, strategy reports, and estimates are based on assumptions, indicative rates, historical patterns, user-provided inputs, and illustrative models. Actual results may vary materially.</p>
+            <p>Market-linked products are subject to market risks. Past performance does not guarantee future results.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">3. No Guarantee</h3>
+            <p>Ask Geo does not guarantee the accuracy, completeness, timeliness, suitability, or reliability of any information, calculation, estimate, projection, or report generated through the website.</p>
+            <p>No guarantee or warranty is made regarding returns, performance, capital preservation, suitability, or outcome.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">4. User Responsibility</h3>
+            <p>You are solely responsible for any action or decision taken on the basis of the website, its tools, or its content. You should independently verify any information before acting on it.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">5. No Client Relationship by Website Use Alone</h3>
+            <p>Use of this website, filling a form, receiving a generated report, or communicating with us does not by itself create a client, adviser, fiduciary, analyst, or professional services relationship unless expressly agreed in writing.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">6. Third-Party Content and Tools</h3>
+            <p>Where the website relies on or links to third-party data, services, integrations, or tools, Ask Geo does not take responsibility for their availability, accuracy, or content.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">7. Limitation of Reliance</h3>
+            <p>The website content should not be treated as a substitute for due diligence, regulated advice, product disclosure documents, or professional review.</p>
+
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">8. Contact</h3>
+            <p>For clarifications regarding this disclaimer, contact:</p>
+            <p>Ask Geo<br/>Email: {email}<br/>Phone: {phone}</p>
+          </div>
+        );
+      case 'Regulatory Information':
+        return (
+          <div className="space-y-4">
+            <p>Ask Geo provides financial education tools, planning calculators, informational content, and consultation-request facilities through this website.</p>
+            <p>Ask Geo does not claim, through this website, to provide regulated investment advisory services, regulated research analyst services, portfolio management services, stock broking services, or any other activity requiring registration, licence, or authorization, unless specifically disclosed in writing with valid registration details.</p>
+            <p>The website’s calculators, reports, and educational materials are intended solely for informational and illustrative purposes. They should not be construed as:</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>personalized investment advice,</li>
+              <li>investment recommendation,</li>
+              <li>research report,</li>
+              <li>assurance of return,</li>
+              <li>solicitation to invest,</li>
+              <li>execution platform or intermediary service.</li>
+            </ul>
+            <p>If Ask Geo offers any regulated service in future, the relevant registration number, entity details, scope of service, and mandatory disclosures shall be published separately in accordance with applicable law.</p>
+            <p>Users are advised to verify the credentials and registration status of any adviser, analyst, intermediary, or service provider before acting on any financial decision. SEBI regulates, among others, Investment Advisers and Research Analysts in India.</p>
+            
+            <h3 className="text-xl font-medium mt-8 text-zinc-900">Contact</h3>
+            <p>For regulatory queries, contact:</p>
+            <p>Email: {email}<br/>Phone: {phone}</p>
+          </div>
+        );
+      default:
+        return <p>Document content not found.</p>;
+    }
+  };
+
+  return (
+    <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
+      <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1200px] mx-auto py-16">
+        <h1 className="text-4xl sm:text-5xl font-light tracking-tighter text-zinc-950 mb-8">{title}</h1>
+        <div className="prose prose-zinc max-w-none font-light leading-relaxed text-zinc-600 bg-white p-8 sm:p-12 rounded-[2rem] border border-zinc-200 shadow-xl shadow-zinc-200/30">
+          {renderContent()}
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// --- Main Application ---
+const AskGeoApp = () => {
+  useSEO("Expert Financial Advisory", "Ask Geo is a premier financial advisory firm in Pune offering holistic wealth management, portfolio architecture, and precision financial calculators.", "home");
+
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState('home');
+  const [isContactModalOpen, setContactModalOpen] = useState(false);
+  const [contactModalTitle, setContactModalTitle] = useState('');
+
+  const openContactModal = (title) => {
+    setContactModalTitle(title);
+    setContactModalOpen(true);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-emerald-200 selection:text-zinc-900 overflow-x-hidden text-left">
+      
+      <style>{`
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float-delayed { animation: float 7s ease-in-out infinite 2s; }
+        .animate-float-slow { animation: float 9s ease-in-out infinite 1s; }
+        @keyframes blob { 0% { transform: translate(0px, 0px) scale(1); } 33% { transform: translate(40px, -60px) scale(1.1); } 66% { transform: translate(-30px, 30px) scale(0.9); } 100% { transform: translate(0px, 0px) scale(1); } }
+        .animate-blob { animation: blob 12s infinite alternate ease-in-out; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+      `}</style>
+
+      {/* --- Minimal Navigation --- */}
+      <nav className={`fixed w-full z-50 transition-all duration-500 ${
+        isScrolled ? 'bg-white/95 backdrop-blur-xl border-b border-zinc-200/50 py-4 shadow-sm' : 'bg-transparent py-6'
+      }`}>
+        <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 flex justify-between items-center">
+          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }}>
+            <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-500 group-hover:scale-105" />
+          </div>
+
+          <div className="hidden lg:flex items-center gap-8 xl:gap-12">
+            {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS', 'CONTACT'].map((item) => {
+              const pageKey = item.toLowerCase();
+              const isActive = currentPage === pageKey;
+              return (
+                <button 
+                  key={item} 
+                  onClick={() => { setCurrentPage(pageKey); window.scrollTo(0,0); }} 
+                  className={`text-[10px] xl:text-xs font-bold tracking-widest transition-colors relative py-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-emerald-500 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
+                >
+                  {item}
+                </button>
+              );
+            })}
+            
+            <button 
+              onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} 
+              className={`text-[10px] xl:text-xs font-bold tracking-widest px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${currentPage === 'tools' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-zinc-900 border-zinc-900 text-white hover:bg-emerald-600 hover:border-emerald-600 shadow-lg'}`}
+            >
+              <Sparkles className="w-4 h-4" /> EXPLORE TOOLS
+            </button>
+          </div>
+
+          <button className="lg:hidden text-zinc-900 p-2 bg-white rounded-lg shadow-sm border border-zinc-100" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X strokeWidth={1.5} className="w-6 h-6" /> : <Menu strokeWidth={1.5} className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <div className={`lg:hidden absolute top-full left-0 w-full bg-white border-b border-zinc-200 py-6 px-6 flex flex-col gap-6 shadow-2xl transition-all duration-300 origin-top ${mobileMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'}`}>
+          {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS', 'CONTACT'].map((item) => {
+            const pageKey = item.toLowerCase();
+            const isActive = currentPage === pageKey;
+            return (
+              <button 
+                key={item} 
+                onClick={() => { setCurrentPage(pageKey); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
+                className={`text-sm font-bold tracking-widest text-left flex items-center gap-3 p-2 rounded-lg ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
+              >
+                {item}
+              </button>
+            );
+          })}
+          <div className="h-px bg-zinc-100 w-full"></div>
+          <button 
+            onClick={() => { setCurrentPage('tools'); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
+            className="mt-2 bg-zinc-900 text-white text-sm font-bold tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 active:bg-emerald-600 transition-colors shadow-lg"
+          >
+            <Sparkles className="w-5 h-5" /> EXPLORE TOOLS
+          </button>
+        </div>
+      </nav>
+
+      {/* --- PAGE ROUTER MAIN --- */}
+      <main>
+        {currentPage === 'about' && <AboutPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
+        {currentPage === 'services' && <ServicesPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
+        {currentPage === 'insights' && <InsightsPage />}
+        {currentPage === 'contact' && <ContactPage />}
+        {currentPage === 'tools' && <CalculatorsPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
+        
+        {currentPage === 'legal-privacy' && <LegalPage title="Privacy Policy" />}
+        {currentPage === 'legal-terms' && <LegalPage title="Terms of Service" />}
+        {currentPage === 'legal-disclosure' && <LegalPage title="Disclosure" />}
+        {currentPage === 'legal-regulatory' && <LegalPage title="Regulatory Information" />}
+        
+        {currentPage === 'home' && (
+          <>
       {/* --- Hero Section --- */}
       <section id="home" className="relative pt-36 sm:pt-44 pb-24 sm:pb-32 lg:pt-52 lg:pb-40 px-6 sm:px-10 lg:px-16 xl:px-24 w-full mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-20 overflow-hidden bg-zinc-50">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[100px] -z-10 animate-blob"></div>
@@ -2246,118 +3220,8 @@ const HomePage = ({ setCurrentPage, openContactModal }) => {
           </FadeIn>
         </div>
       </section>
-    </>
-  );
-};
-
-// --- Main Application ---
-const AskGeoApp = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState('home');
-  const [isContactModalOpen, setContactModalOpen] = useState(false);
-  const [contactModalTitle, setContactModalTitle] = useState('');
-
-  const openContactModal = (title) => {
-    setContactModalTitle(title);
-    setContactModalOpen(true);
-  };
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-emerald-200 selection:text-zinc-900 overflow-x-hidden text-left">
-      
-      <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-float-delayed { animation: float 7s ease-in-out infinite 2s; }
-        .animate-float-slow { animation: float 9s ease-in-out infinite 1s; }
-        @keyframes blob { 0% { transform: translate(0px, 0px) scale(1); } 33% { transform: translate(40px, -60px) scale(1.1); } 66% { transform: translate(-30px, 30px) scale(0.9); } 100% { transform: translate(0px, 0px) scale(1); } }
-        .animate-blob { animation: blob 12s infinite alternate ease-in-out; }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
-      `}</style>
-
-      {/* --- Minimal Navigation --- */}
-      <nav className={`fixed w-full z-50 transition-all duration-500 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-xl border-b border-zinc-200/50 py-4 shadow-sm' : 'bg-transparent py-6'
-      }`}>
-        <div className="w-full max-w-[1800px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 flex justify-between items-center">
-          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }}>
-            <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" className="h-10 sm:h-12 w-auto object-contain transition-transform duration-500 group-hover:scale-105" />
-          </div>
-
-          <div className="hidden lg:flex items-center gap-8 xl:gap-12">
-            {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS', 'CONTACT'].map((item) => {
-              const pageKey = item.toLowerCase();
-              const isActive = currentPage === pageKey;
-              return (
-                <button 
-                  key={item} 
-                  onClick={() => { setCurrentPage(pageKey); window.scrollTo(0,0); }} 
-                  className={`text-[10px] xl:text-xs font-bold tracking-widest transition-colors relative py-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-emerald-500 after:transition-all after:duration-300 ${isActive ? 'text-zinc-900 after:w-full' : 'text-zinc-500 hover:text-zinc-900 after:w-0 hover:after:w-full'}`}
-                >
-                  {item}
-                </button>
-              );
-            })}
-            
-            <button 
-              onClick={() => { setCurrentPage('tools'); window.scrollTo(0,0); }} 
-              className={`text-[10px] xl:text-xs font-bold tracking-widest px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${currentPage === 'tools' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'bg-zinc-900 border-zinc-900 text-white hover:bg-emerald-600 hover:border-emerald-600 shadow-lg'}`}
-            >
-              <Sparkles className="w-4 h-4" /> ADVANCED TOOLS
-            </button>
-          </div>
-
-          <button className="lg:hidden text-zinc-900 p-2 bg-white rounded-lg shadow-sm border border-zinc-100" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X strokeWidth={1.5} className="w-6 h-6" /> : <Menu strokeWidth={1.5} className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <div className={`lg:hidden absolute top-full left-0 w-full bg-white border-b border-zinc-200 py-6 px-6 flex flex-col gap-6 shadow-2xl transition-all duration-300 origin-top ${mobileMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'}`}>
-          {['HOME', 'ABOUT', 'SERVICES', 'INSIGHTS', 'CONTACT'].map((item) => {
-            const pageKey = item.toLowerCase();
-            const isActive = currentPage === pageKey;
-            return (
-              <button 
-                key={item} 
-                onClick={() => { setCurrentPage(pageKey); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-                className={`text-sm font-bold tracking-widest text-left flex items-center gap-3 p-2 rounded-lg ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-zinc-600 hover:bg-zinc-50'}`}
-              >
-                {item}
-              </button>
-            );
-          })}
-          <div className="h-px bg-zinc-100 w-full"></div>
-          <button 
-            onClick={() => { setCurrentPage('tools'); setMobileMenuOpen(false); window.scrollTo(0,0); }} 
-            className="mt-2 bg-zinc-900 text-white text-sm font-bold tracking-widest py-4 rounded-xl flex items-center justify-center gap-2 active:bg-emerald-600 transition-colors shadow-lg"
-          >
-            <Sparkles className="w-5 h-5" /> ADVANCED TOOLS
-          </button>
-        </div>
-      </nav>
-
-      {/* --- PAGE ROUTER MAIN --- */}
-      <main>
-        {currentPage === 'home' && <HomePage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
-        {currentPage === 'about' && <AboutPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
-        {currentPage === 'services' && <ServicesPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
-        {currentPage === 'insights' && <InsightsPage />}
-        {currentPage === 'contact' && <ContactPage />}
-        {currentPage === 'tools' && <CalculatorsPage setCurrentPage={setCurrentPage} openContactModal={openContactModal} />}
-        
-        {currentPage === 'legal-privacy' && <LegalPage title="Privacy Policy" />}
-        {currentPage === 'legal-terms' && <LegalPage title="Terms of Service" />}
-        {currentPage === 'legal-disclosure' && <LegalPage title="Disclosure" />}
-        {currentPage === 'legal-regulatory' && <LegalPage title="Regulatory Information" />}
+          </>
+        )}
       </main>
 
       {/* --- Clean Align-Left Footer --- */}
