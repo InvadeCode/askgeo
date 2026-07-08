@@ -37,7 +37,7 @@ const wakeBackend = async () => {
   }
 };
 
-const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
+const sendEmailViaBackend = async (subject, htmlBody, attachments = [], to = TARGET_EMAIL) => {
   const formattedAttachments = attachments.map((att) => {
     let base64String = '';
 
@@ -53,6 +53,7 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
       filename: att.filename,
       content: base64String,
       encoding: 'base64',
+      contentType: att.contentType || 'application/pdf',
     };
   });
 
@@ -77,7 +78,7 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
             'Accept': 'application/json',
           },
           body: JSON.stringify({
-            to: TARGET_EMAIL,
+            to,
             subject,
             html: htmlBody,
             attachments: formattedAttachments,
@@ -88,7 +89,7 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = []) => {
 
       if (response.status === 404) {
         console.warn(`Endpoint ${endpoint} returned 404. Trying next fallback...`);
-        continue; 
+        continue;
       }
 
       data = await response.json().catch(() => ({}));
@@ -608,6 +609,306 @@ const AuditInput = ({ label, children }) => (
 const inputClass = "w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm text-zinc-900 bg-zinc-50 focus:bg-white";
 const selectClass = inputClass;
 
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+const getAuditReportFilename = (form) => {
+  const cleanName = (form.name || 'AskGeo-Client').trim().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  return `AskGeo-Financial-Goal-Audit-${cleanName || 'Client'}.pdf`;
+};
+
+const downloadDataUri = (dataUri, filename) => {
+  const link = document.createElement('a');
+  link.href = dataUri;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const loadHtml2Pdf = async () => {
+  if (window.html2pdf) return;
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-html2pdf="true"]');
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error('html2pdf.js failed to load')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.async = true;
+    script.dataset.html2pdf = 'true';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('html2pdf.js failed to load'));
+    document.head.appendChild(script);
+  });
+};
+
+const getAuditPdfMarkup = (form, result) => {
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const refId = `AG-AUDIT-${Math.floor(100000 + Math.random() * 900000)}`;
+  const goals = result.goalRows || [];
+  const projections = result.projectionRows || [];
+  const directions = result.allocationDirection || [];
+
+  return `
+    <div id="audit-pdf-content" style="width:210mm; min-height:297mm; background:#ffffff; color:#18181b; font-family:Inter, Helvetica, Arial, sans-serif; box-sizing:border-box; padding:0;">
+      <div style="background:#047857; color:#ffffff; padding:38px 44px;">
+        <div style="background:#ffffff; padding:7px 12px; border-radius:8px; display:inline-flex; align-items:center; margin-bottom:24px;">
+          <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" style="height:28px; width:auto; object-fit:contain;" />
+        </div>
+        <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#a7f3d0; font-weight:700; margin-bottom:8px;">Financial Goal Audit</div>
+        <h1 style="font-size:34px; line-height:1.08; font-weight:300; letter-spacing:-1px; margin:0 0 14px;">Personal Financial Discovery Report</h1>
+        <p style="font-size:13px; line-height:1.6; color:#d1fae5; max-width:620px; margin:0;">This report summarises the information submitted by the client and converts it into a financial snapshot, risk profile, suitability view, goal map, and scenario-based projection.</p>
+        <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(255,255,255,.22); margin-top:24px; padding-top:18px; gap:24px;">
+          <div>
+            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:5px;">Prepared For</div>
+            <div style="font-size:15px; font-weight:600;">${escapeHtml(form.name || 'Website Visitor')}</div>
+            <div style="font-size:11px; color:#d1fae5; margin-top:4px;">${escapeHtml(form.email || '')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#d1fae5; margin-bottom:5px;">Date</div>
+            <div style="font-size:14px; font-weight:600;">${today}</div>
+            <div style="font-size:11px; color:#d1fae5; margin-top:4px;">Ref: ${refId}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:34px 44px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:24px;">
+          ${[
+            ['Client Type', result.clientType],
+            ['Risk Profile', result.riskProfile],
+            ['Health Score', `${result.financialHealthScore}/100`],
+            ['Monthly Income', formatCurrency(result.income)],
+            ['Monthly Expenses', formatCurrency(result.expenses)],
+            ['Monthly Savings', formatCurrency(result.savings)],
+            ['Savings Rate', `${result.savingsRate.toFixed(1)}%`],
+            ['Investable Surplus', formatCurrency(result.investableSurplus)],
+            ['Emergency Fund', result.emergencyStatus],
+          ].map(([label, value]) => `
+            <div style="border:1px solid #e5e7eb; border-radius:14px; padding:14px; background:#f9fafb;">
+              <div style="font-size:8px; text-transform:uppercase; letter-spacing:1px; color:#71717a; font-weight:700; margin-bottom:6px;">${label}</div>
+              <div style="font-size:17px; color:#18181b; font-weight:400;">${escapeHtml(value)}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="border:1px solid #d1fae5; background:#ecfdf5; border-radius:18px; padding:20px; margin-bottom:24px;">
+          <div style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#047857; font-weight:800; margin-bottom:8px;">Suitability Summary</div>
+          <div style="font-size:13px; color:#064e3b; line-height:1.65;">Your current profile suggests a <strong>${escapeHtml(result.riskProfile)}</strong> risk profile. The first priority is suitability: emergency fund, insurance readiness, debt pressure, and investment horizon should be reviewed before any market-linked strategy is executed.</div>
+        </div>
+
+        <h2 style="font-size:19px; font-weight:400; margin:0 0 12px; color:#18181b;">Goal Conversion</h2>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:26px; font-size:11px;">
+          <thead>
+            <tr style="background:#f4f4f5; color:#52525b; text-transform:uppercase; letter-spacing:.8px; font-size:8px;">
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Goal</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Target</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Horizon</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Monthly Needed</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${goals.length ? goals.map((goal) => `
+              <tr>
+                <td style="padding:10px; border:1px solid #e5e7eb; font-weight:600;">${escapeHtml(goal.goal)}</td>
+                <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.target)}</td>
+                <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.horizon)}</td>
+                <td style="padding:10px; border:1px solid #e5e7eb; color:#047857; font-weight:600;">${escapeHtml(goal.monthly)}</td>
+                <td style="padding:10px; border:1px solid #e5e7eb;">${escapeHtml(goal.priority)}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="5" style="padding:12px; border:1px solid #e5e7eb; color:#71717a;">No goal map generated.</td></tr>`}
+          </tbody>
+        </table>
+
+        <h2 style="font-size:19px; font-weight:400; margin:0 0 12px; color:#18181b;">Scenario-Based Growth Projection</h2>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:24px; font-size:11px;">
+          <thead>
+            <tr style="background:#f4f4f5; color:#52525b; text-transform:uppercase; letter-spacing:.8px; font-size:8px;">
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Period</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Conservative 6%</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Balanced 9%</th>
+              <th style="text-align:left; padding:10px; border:1px solid #e5e7eb;">Growth 12%</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${projections.map((row) => `
+              <tr>
+                <td style="padding:10px; border:1px solid #e5e7eb; font-weight:600;">${row.years} years</td>
+                <td style="padding:10px; border:1px solid #e5e7eb;">${formatCurrency(row.conservative)} approx.</td>
+                <td style="padding:10px; border:1px solid #e5e7eb;">${formatCurrency(row.balanced)} approx.</td>
+                <td style="padding:10px; border:1px solid #e5e7eb; color:#047857; font-weight:600;">${formatCurrency(row.growth)} approx.</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <h2 style="font-size:19px; font-weight:400; margin:0 0 12px; color:#18181b;">Strategic Direction</h2>
+        <ul style="padding-left:18px; margin:0 0 24px; color:#3f3f46; font-size:12px; line-height:1.7;">
+          ${directions.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+        </ul>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:24px;">
+          ${[
+            ['30-Day Plan', 'Document income, expenses, EMIs, insurance, and emergency fund. Define the first goal with a realistic amount.'],
+            ['90-Day Plan', 'Complete protection gaps, build emergency savings, reduce high-pressure debt, and start only suitable investment buckets.'],
+            ['12-Month Plan', 'Review progress, rebalance broad allocation, and increase SIP capacity only if cash flow and safety cover allow it.'],
+          ].map(([title, copy]) => `
+            <div style="background:#18181b; color:#ffffff; border-radius:14px; padding:16px;">
+              <div style="font-size:8px; text-transform:uppercase; letter-spacing:1px; color:#6ee7b7; font-weight:800; margin-bottom:8px;">${title}</div>
+              <div style="font-size:11px; line-height:1.6; color:#d4d4d8;">${copy}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="border-top:1px solid #e5e7eb; padding-top:14px; color:#71717a; font-size:9px; line-height:1.55;">
+          <strong>Disclaimer:</strong> This is an educational projection and not guaranteed investment advice. It does not recommend specific stocks, mutual fund schemes, insurance products, or guaranteed returns. Final investment decisions should be reviewed by a qualified financial advisor. Actual returns depend on market performance, investment selection, fees, taxation, and investor behaviour.
+        </div>
+      </div>
+    </div>
+  `;
+};
+
+const createAuditPdfDataUri = async (form, result) => {
+  await loadHtml2Pdf();
+
+  let hiddenDiv = null;
+  try {
+    hiddenDiv = document.createElement('div');
+    hiddenDiv.style.position = 'fixed';
+    hiddenDiv.style.left = '-10000px';
+    hiddenDiv.style.top = '0';
+    hiddenDiv.style.width = '210mm';
+    hiddenDiv.style.background = '#ffffff';
+    hiddenDiv.innerHTML = getAuditPdfMarkup(form, result);
+    document.body.appendChild(hiddenDiv);
+
+    const targetElement = hiddenDiv.querySelector('#audit-pdf-content');
+    return await window.html2pdf()
+      .set({
+        margin: 0,
+        filename: getAuditReportFilename(form),
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 1.5, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      })
+      .from(targetElement)
+      .outputPdf('datauristring');
+  } finally {
+    if (hiddenDiv && document.body.contains(hiddenDiv)) {
+      document.body.removeChild(hiddenDiv);
+    }
+  }
+};
+
+const saveAuditSubmissionToSupabase = async (form, result) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
+  }
+
+  const payload = {
+    full_name: form.name?.trim(),
+    email: form.email?.trim(),
+    phone: form.phone?.trim(),
+    age: toNumber(form.age) || null,
+    occupation: form.occupation || null,
+    monthly_income: result.income,
+    monthly_expenses: result.expenses,
+    monthly_savings: result.savings,
+    dependents_count: form.dependents === 'Yes' ? toNumber(form.dependentsCount) : 0,
+    income_stability: form.incomeStability,
+    emergency_fund_status: form.emergencyFund,
+    active_loans: form.hasLoans === 'Yes',
+    monthly_emi: form.hasLoans === 'Yes' ? toNumber(form.monthlyEmi) : 0,
+    insurance_status: form.insuranceStatus,
+    investment_experience: form.investedBefore,
+    monthly_investment_capacity: toNumber(form.monthlyInvestCapacity),
+    lump_sum_available: toNumber(form.lumpSum),
+    market_fall_reaction: form.marketReaction,
+    investment_knowledge: form.knowledgeLevel,
+    selected_goals: form.topGoals,
+    primary_goal: form.primaryGoal,
+    goal_time_horizon: form.goalTimeline,
+    goal_target_amount: toNumber(form.targetAmount),
+    capital_preference: form.capitalPreference,
+    form_responses: form,
+    analysis: result,
+    savings_rate: Number(result.savingsRate.toFixed(2)),
+    investable_surplus: result.investableSurplus,
+    financial_health_score: result.financialHealthScore,
+    risk_profile: result.riskProfile,
+    client_type: result.clientType,
+    emergency_fund_strength: result.emergencyStatus,
+    debt_pressure: result.debtPressure,
+    insurance_readiness: result.insuranceReadiness,
+    pdf_generated: false,
+    pdf_filename: getAuditReportFilename(form),
+    emailed_to_client: false,
+    emailed_to_geo: false,
+    geo_email: TARGET_EMAIL,
+    disclaimer_accepted: true,
+    consent_to_contact: true,
+    source: 'AskGeo Website',
+    source_page: 'Tools - Goal Audit',
+    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+  };
+
+  const response = await fetchWithTimeout(
+    `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${SUPABASE_AUDIT_TABLE}`,
+    {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(payload),
+    },
+    60000
+  );
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || `Supabase insert failed: ${response.status}`);
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+};
+
+const getAuditEmailHtml = (form, result) => getBeautifulEmailTemplate('Financial Goal Audit Report', {
+  name: form.name || 'Website Visitor',
+  phone: form.phone,
+  email: form.email,
+  message: `
+    Age: ${escapeHtml(form.age || 'N/A')}<br/>
+    Occupation: ${escapeHtml(form.occupation || 'N/A')}<br/>
+    Income: ${formatCurrency(result.income)}<br/>
+    Expenses: ${formatCurrency(result.expenses)}<br/>
+    Savings: ${formatCurrency(result.savings)}<br/>
+    Investable Surplus: ${formatCurrency(result.investableSurplus)}<br/>
+    Primary Goal: ${escapeHtml(form.primaryGoal || 'N/A')}<br/>
+    Target Amount: ${form.targetAmount ? formatCurrency(toNumber(form.targetAmount)) : 'N/A'}<br/>
+    Risk Profile: ${escapeHtml(result.riskProfile)}<br/>
+    Financial Health Score: ${result.financialHealthScore}/100<br/>
+    <br/>The full PDF report is attached.
+  `,
+}, [
+  { label: 'Financial Health Score', value: `${result.financialHealthScore}/100`, success: result.financialHealthScore >= 70 },
+  { label: 'Client Type', value: result.clientType },
+  { label: 'Risk Profile', value: result.riskProfile },
+  { label: 'Monthly Investable Surplus', value: formatCurrency(result.investableSurplus), success: result.investableSurplus > 0 },
+]);
+
 const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal }) => {
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -661,37 +962,50 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+
+    if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
+      alert('Please add name, phone number, and email before generating the report.');
+      setStep(0);
+      return;
+    }
+
     setIsSending(true);
 
-    const emailRows = [
-      { label: 'Financial Health Score', value: `${result.financialHealthScore}/100`, success: result.financialHealthScore >= 70 },
-      { label: 'Client Type', value: result.clientType },
-      { label: 'Risk Profile', value: result.riskProfile },
-      { label: 'Monthly Investable Surplus', value: formatCurrency(result.investableSurplus), success: result.investableSurplus > 0 },
-    ];
-
-    const html = getBeautifulEmailTemplate('AI Financial Goal Audit', {
-      name: form.name || 'Website Visitor',
-      phone: form.phone,
-      email: form.email,
-      message: `
-        Age: ${form.age || 'N/A'}<br/>
-        Occupation: ${form.occupation || 'N/A'}<br/>
-        Income: ${formatCurrency(result.income)}<br/>
-        Expenses: ${formatCurrency(result.expenses)}<br/>
-        Savings: ${formatCurrency(result.savings)}<br/>
-        Primary Goal: ${form.primaryGoal || 'N/A'}<br/>
-        Target Amount: ${form.targetAmount ? formatCurrency(toNumber(form.targetAmount)) : 'N/A'}<br/>
-        Risk Profile: ${result.riskProfile}<br/>
-        Financial Health Score: ${result.financialHealthScore}/100
-      `
-    }, emailRows);
-
     try {
-      await sendEmailViaBackend(`Ask Geo AI Financial Audit - ${form.name || 'New Lead'}`, html);
+      const latestResult = analyseFinancialAudit(form);
+
+      // 1. Store answers in Supabase first. If this fails, stop.
+      await saveAuditSubmissionToSupabase(form, latestResult);
+
+      // 2. Generate the same PDF for email + download.
+      const filename = getAuditReportFilename(form);
+      const pdfDataUri = await createAuditPdfDataUri(form, latestResult);
+      const attachments = [{ filename, dataUri: pdfDataUri, contentType: 'application/pdf' }];
+      const html = getAuditEmailHtml(form, latestResult);
+
+      // 3. Email Geo and the client.
+      await sendEmailViaBackend(
+        `Ask Geo Financial Goal Audit - ${form.name || 'New Lead'}`,
+        html,
+        attachments,
+        TARGET_EMAIL
+      );
+
+      await sendEmailViaBackend(
+        'Your Ask Geo Financial Goal Audit Report',
+        html,
+        attachments,
+        form.email.trim()
+      );
+
+      // 4. Download the PDF for the user.
+      downloadDataUri(pdfDataUri, filename);
+
+      // 5. Show the report only after storage + email + download all complete.
+      setSubmitted(true);
     } catch (error) {
-      console.warn('Audit lead email failed, but report was generated locally:', error);
+      console.error('Audit submission failed:', error);
+      alert(`Audit submission failed: ${error.message}`);
     } finally {
       setIsSending(false);
     }
@@ -711,7 +1025,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
               <div className="absolute top-0 right-0 w-[280px] h-[280px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[60px] pointer-events-none"></div>
               <div className="relative z-10 max-w-4xl">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
-                  <Bot className="w-4 h-4" /> AI Financial Discovery Report
+                  <Sparkles className="w-4 h-4" /> Financial Discovery Report
                 </div>
                 <h2 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tighter leading-[1.05] mb-5">
                   {result.clientType}
@@ -886,7 +1200,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
             <div className="absolute top-0 right-0 w-[220px] h-[220px] bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/25 to-transparent rounded-full blur-[50px] pointer-events-none"></div>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10 text-emerald-200 text-[10px] font-bold tracking-widest uppercase mb-6">
-                <Sparkles className="w-4 h-4" /> AI Audit
+                <ShieldCheck className="w-4 h-4" /> Goal Audit
               </div>
               <h2 className="text-3xl sm:text-4xl font-light tracking-tighter mb-4">Personal Financial Goal Discovery</h2>
               <p className="text-zinc-300 text-sm font-light leading-relaxed mb-8">
@@ -921,13 +1235,13 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
             {step === 0 && (
               <div className="grid sm:grid-cols-2 gap-5">
                 <AuditInput label="Full Name">
-                  <input className={inputClass} value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="e.g. Rajesh Sharma" />
+                  <input required className={inputClass} value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="e.g. Rajesh Sharma" />
                 </AuditInput>
                 <AuditInput label="Phone Number">
-                  <input className={inputClass} value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="10-digit mobile number" maxLength="10" />
+                  <input required className={inputClass} type="tel" pattern="[0-9]{10}" value={form.phone} onChange={(e) => update('phone', e.target.value.replace(/\D/g, ''))} placeholder="10-digit mobile number" maxLength="10" />
                 </AuditInput>
                 <AuditInput label="Email Address">
-                  <input className={inputClass} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" />
+                  <input required className={inputClass} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" />
                 </AuditInput>
                 <AuditInput label="Age">
                   <input required className={inputClass} type="number" value={form.age} onChange={(e) => update('age', e.target.value)} placeholder="e.g. 32" />
@@ -1052,7 +1366,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                 </AuditInput>
                 <div className="sm:col-span-2 bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
                   <p className="text-sm text-emerald-900 font-light leading-relaxed">
-                    Ask Geo AI will first check risk profile and suitability. It will only show broad planning directions and scenario projections — no specific stocks, schemes, insurance products, or guaranteed returns.
+                    Ask Geo will first check risk profile and suitability. It will only show broad planning directions and scenario projections — no specific stocks, schemes, insurance products, or guaranteed returns.
                   </p>
                 </div>
               </div>
@@ -1086,14 +1400,14 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
 };
 
 const FinancialAuditPage = ({ setCurrentPage, openContactModal }) => {
-  useSEO("AI Financial Goal Audit", "A guided financial discovery audit for first-time investors with risk profiling, suitability checks, and scenario-based planning projections.", "audit");
+  useSEO("Financial Goal Audit", "A guided financial discovery audit for first-time investors with risk profiling, suitability checks, and scenario-based planning projections.", "audit");
 
   return (
     <div className="pt-32 pb-24 animate-in fade-in duration-700 text-left bg-zinc-50 min-h-screen">
       <section className="px-6 sm:px-10 lg:px-16 xl:px-24 w-full max-w-[1800px] mx-auto py-16 lg:py-20">
         <FadeIn direction="down" className="max-w-4xl mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold tracking-widest uppercase mb-6">
-            <Bot className="w-4 h-4" /> Ask Geo AI Audit
+            <ShieldCheck className="w-4 h-4" /> Ask Geo Goal Audit
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tighter text-zinc-950 mb-6 leading-[1.05]">
             Discover your money goals <br />
@@ -1122,8 +1436,8 @@ const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvest
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="max-w-3xl">
             <div className="flex items-center gap-2 text-emerald-600 mb-4">
-              <Bot className="w-5 h-5" />
-              <h4 className="text-xs font-semibold tracking-widest uppercase">Ask Geo AI Analysis</h4>
+              <Sparkles className="w-5 h-5" />
+              <h4 className="text-xs font-semibold tracking-widest uppercase">Ask Geo Smart Analysis</h4>
             </div>
             <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-zinc-950 mb-4">Smart Summary</h3>
             <p className="text-sm sm:text-base text-zinc-600 font-light leading-relaxed">
@@ -1158,103 +1472,6 @@ const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvest
         </div>
       </div>
     </FadeIn>
-  );
-};
-
-const AskGeoAICopilot = ({ setCurrentPage, openContactModal }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      text: 'Hi, I’m Ask Geo AI Copilot. I can help you understand SIPs, risk profile, emergency funds, goal planning, and where to start.',
-    },
-  ]);
-
-  const getReply = (question) => {
-    const q = question.toLowerCase();
-    if (q.includes('audit') || q.includes('risk') || q.includes('profile')) {
-      return 'Start with the AI Audit. It checks savings rate, emergency fund, EMI pressure, insurance readiness, investment horizon, and reaction to market fall before showing any projection.';
-    }
-    if (q.includes('sip') || q.includes('invest')) {
-      return 'A SIP should match your cash flow and risk comfort. Before deciding the amount, check whether your emergency fund, insurance, and debt pressure are in place.';
-    }
-    if (q.includes('emergency')) {
-      return 'A practical emergency fund is usually built around essential monthly expenses. The audit uses your expenses to estimate a basic safety target before long-term investing.';
-    }
-    if (q.includes('goal')) {
-      return 'A goal needs three things: amount, timeline, and priority. Once these are clear, monthly investment required can be estimated using scenario-based assumptions.';
-    }
-    return 'Good question. For a safe starting point, use the AI Audit first. It will convert your answers into a simple financial snapshot, risk profile, goal map, and scenario projections.';
-  };
-
-  const sendMessage = (text = input) => {
-    const clean = text.trim();
-    if (!clean) return;
-    setMessages((prev) => [...prev, { role: 'user', text: clean }, { role: 'assistant', text: getReply(clean) }]);
-    setInput('');
-  };
-
-  return (
-    <>
-      {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[620px] bg-white border border-zinc-200 rounded-[2rem] shadow-2xl shadow-zinc-900/20 z-[90] overflow-hidden animate-in zoom-in-95 duration-300 text-left">
-          <div className="bg-emerald-600 p-5 flex items-center justify-between relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-400/30 rounded-full blur-2xl pointer-events-none"></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 text-white">
-                <Bot className="w-5 h-5" />
-                <h3 className="font-medium">Ask Geo AI Copilot</h3>
-              </div>
-              <p className="text-emerald-100 text-[10px] font-medium tracking-widest uppercase mt-1">Planning assistant</p>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="relative z-10 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="p-5 space-y-4 max-h-[360px] overflow-y-auto bg-zinc-50">
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm font-light leading-relaxed ${
-                  msg.role === 'user' ? 'bg-zinc-900 text-white' : 'bg-white border border-zinc-200 text-zinc-700'
-                }`}>
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-4 border-t border-zinc-100 bg-white">
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <button onClick={() => { setCurrentPage('tools'); setIsOpen(false); window.scrollTo(0,0); }} className="text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 transition-colors">Open AI Audit</button>
-              <button onClick={() => openContactModal('Ask Geo AI Copilot Session')} className="text-xs px-3 py-2 rounded-xl bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-white transition-colors">Book Session</button>
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' ? sendMessage() : null}
-                className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm bg-zinc-50 focus:bg-white"
-                placeholder="Ask about SIP, risk, goals..."
-              />
-              <button onClick={() => sendMessage()} className="w-12 h-12 rounded-xl bg-zinc-900 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors">
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-[91] w-16 h-16 rounded-2xl bg-emerald-600 text-white shadow-2xl shadow-emerald-900/30 flex items-center justify-center hover:bg-emerald-700 transition-all duration-300 group"
-        aria-label="Open Ask Geo AI Copilot"
-      >
-        <Sparkles className="absolute w-5 h-5 -top-1 -right-1 bg-white text-emerald-600 rounded-full p-1 shadow-md animate-pulse" />
-        <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
-      </button>
-    </>
   );
 };
 
@@ -3733,7 +3950,7 @@ const CalculatorsPage = ({ setCurrentPage, openContactModal }) => {
   const [activeTab, setActiveTab] = useState('audit');
 
   const tabs = [
-    { id: 'audit', name: '🤖 AI Audit', icon: Bot },
+    { id: 'audit', name: 'Goal Audit', icon: ShieldCheck },
     { id: 'sip', name: 'SIP Pro', icon: TrendingUp },
     { id: 'stepup', name: 'Step-Up SIP', icon: Zap },
     { id: 'stp', name: 'STP to SIP', icon: RefreshCw },
@@ -4257,7 +4474,6 @@ const AskGeoApp = () => {
       
       {/* Render Modals at the Root Level */}
       <GeneralContactModal isOpen={isContactModalOpen} onClose={() => setContactModalOpen(false)} title={contactModalTitle} />
-      <AskGeoAICopilot setCurrentPage={setCurrentPage} openContactModal={openContactModal} />
     </div>
   );
 };
