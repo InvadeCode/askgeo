@@ -111,54 +111,85 @@ const sendEmailViaBackend = async (subject, htmlBody, attachments = [], to = TAR
   throw new Error("HTTP Error: 404. Both endpoints failed. Please make sure your updated backend code is fully deployed on Render.");
 };
 
-const getBeautifulEmailTemplate = (title, leadData, metrics = []) => `
-  <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);">
-    <div style="background-color: #047857; padding: 32px 24px; text-align: center;">
-      <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 400; letter-spacing: -0.5px;">New Lead Interaction</h2>
-      <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Source: ${title}</p>
-    </div>
-    <div style="padding: 32px;">
-      <h3 style="color: #111827; font-size: 16px; font-weight: 600; border-bottom: 2px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px;">Contact Details</h3>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 36px;">
-        <tr>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; background-color: #f9fafb; color: #6b7280; width: 35%; font-weight: 500; font-size: 13px;">Full Name</td>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 600; font-size: 14px;">${leadData.name || 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; background-color: #f9fafb; color: #6b7280; font-weight: 500; font-size: 13px;">Phone</td>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 600; font-size: 14px;">${leadData.phone ? '+91 ' + leadData.phone : 'N/A'}</td>
-        </tr>
-        <tr>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; background-color: #f9fafb; color: #6b7280; font-weight: 500; font-size: 13px;">Email</td>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 600; font-size: 14px;">${leadData.email || 'N/A'}</td>
-        </tr>
-        ${leadData.message ? `
-        <tr>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; background-color: #f9fafb; color: #6b7280; font-weight: 500; font-size: 13px;">Message</td>
-          <td style="padding: 14px 12px; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 400; font-size: 14px;">${leadData.message}</td>
-        </tr>
-        ` : ''}
-      </table>
+const normalizeEmailText = (value = '') => escapeHtml(String(value ?? ''))
+  .replace(/&lt;br\s*\/?&gt;/gi, '<br/>')
+  .replace(/\n/g, '<br/>');
 
-      ${metrics.length > 0 ? `
-        <h3 style="color: #111827; font-size: 16px; font-weight: 600; border-bottom: 2px solid #f3f4f6; padding-bottom: 12px; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px;">Generated Metrics</h3>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-          ${metrics.map((m, index) => `
+const getBeautifulEmailTemplate = (title, leadData = {}, metrics = []) => {
+  const safeTitle = escapeHtml(title || 'Ask Geo Lead');
+  const safeName = escapeHtml(leadData.name || 'N/A');
+  const safePhone = leadData.phone ? `+91 ${escapeHtml(leadData.phone)}` : 'N/A';
+  const safeEmail = escapeHtml(leadData.email || 'N/A');
+  const safeMessage = leadData.message ? normalizeEmailText(leadData.message) : '';
+  const generatedAt = new Date().toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `
+  <div style="margin:0; padding:0; background:#f4f4f5; font-family:Inter, Helvetica, Arial, sans-serif; color:#18181b;">
+    <div style="max-width:680px; margin:0 auto; padding:28px 14px;">
+      <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:22px; overflow:hidden; box-shadow:0 20px 50px rgba(15,23,42,0.08);">
+        <div style="background:#047857; padding:34px 34px 30px; color:#ffffff;">
+          <div style="display:inline-block; background:#ffffff; color:#047857; padding:7px 12px; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:22px;">Ask Geo</div>
+          <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#a7f3d0; font-weight:800; margin-bottom:8px;">${safeTitle}</div>
+          <h1 style="margin:0; font-size:28px; line-height:1.15; font-weight:400; letter-spacing:-0.8px; color:#ffffff;">New Financial Planning Interaction</h1>
+          <p style="margin:12px 0 0; color:#d1fae5; font-size:13px; line-height:1.6;">A user has submitted details through the Ask Geo website. The contact information, generated metrics, and PDF report are attached below where applicable.</p>
+        </div>
+
+        <div style="padding:30px 34px;">
+          <h2 style="margin:0 0 16px; color:#111827; font-size:15px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">Contact Details</h2>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:separate; border-spacing:0; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; margin-bottom:26px;">
             <tr>
-              <td style="padding: 16px 12px; border-bottom: ${index === metrics.length - 1 ? 'none' : '1px solid #e5e7eb'}; background-color: ${m.success ? '#ecfdf5' : '#ffffff'}; color: #6b7280; width: 55%; font-weight: 500; font-size: 13px;">${m.label}</td>
-              <td style="padding: 16px 12px; border-bottom: ${index === metrics.length - 1 ? 'none' : '1px solid #e5e7eb'}; background-color: ${m.success ? '#ecfdf5' : '#ffffff'}; color: ${m.success ? '#059669' : '#111827'}; font-weight: 700; font-size: 16px;">${m.value}</td>
+              <td style="width:34%; background:#f9fafb; padding:14px 16px; border-bottom:1px solid #e5e7eb; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px;">Full Name</td>
+              <td style="padding:14px 16px; border-bottom:1px solid #e5e7eb; color:#111827; font-size:14px; font-weight:700;">${safeName}</td>
             </tr>
-          `).join('')}
-        </table>
-        <p style="font-size: 12px; color: #9ca3af; margin-top: 16px; text-align: center;"><em>*The detailed PDF blueprint has been attached to this email.</em></p>
-      ` : ''}
+            <tr>
+              <td style="background:#f9fafb; padding:14px 16px; border-bottom:1px solid #e5e7eb; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px;">Phone</td>
+              <td style="padding:14px 16px; border-bottom:1px solid #e5e7eb; color:#111827; font-size:14px; font-weight:700;">${safePhone}</td>
+            </tr>
+            <tr>
+              <td style="background:#f9fafb; padding:14px 16px; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px;">Email</td>
+              <td style="padding:14px 16px; color:#111827; font-size:14px; font-weight:700;">${safeEmail}</td>
+            </tr>
+          </table>
+
+          ${safeMessage ? `
+            <h2 style="margin:0 0 16px; color:#111827; font-size:15px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">Submitted Details</h2>
+            <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:14px; padding:18px 18px; color:#3f3f46; font-size:13px; line-height:1.75; margin-bottom:26px;">${safeMessage}</div>
+          ` : ''}
+
+          ${metrics.length > 0 ? `
+            <h2 style="margin:0 0 16px; color:#111827; font-size:15px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">Generated Metrics</h2>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:separate; border-spacing:0; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; margin-bottom:22px;">
+              ${metrics.map((m, index) => `
+                <tr>
+                  <td style="width:52%; padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#ecfdf5' : '#ffffff'}; color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.7px;">${escapeHtml(m.label)}</td>
+                  <td style="padding:15px 16px; border-bottom:${index === metrics.length - 1 ? '0' : '1px solid #e5e7eb'}; background:${m.success ? '#ecfdf5' : '#ffffff'}; color:${m.success ? '#047857' : '#111827'}; font-size:16px; font-weight:800;">${escapeHtml(m.value)}</td>
+                </tr>
+              `).join('')}
+            </table>
+            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:14px; padding:16px; color:#064e3b; font-size:13px; line-height:1.55; margin-bottom:26px;">
+              The detailed PDF report is attached to this email. The report uses educational projections only and avoids specific stock, mutual fund scheme, or insurance product recommendations.
+            </div>
+          ` : ''}
+
+          <div style="border-top:1px solid #e5e7eb; padding-top:18px; color:#71717a; font-size:11px; line-height:1.6;">
+            <strong style="color:#3f3f46;">Disclaimer:</strong> This communication and any attached report are for educational and planning illustration only. They do not constitute investment advice, product recommendation, guarantee of returns, tax advice, legal advice, or solicitation.
+          </div>
+        </div>
+
+        <div style="background:#111827; padding:20px 30px; color:#a1a1aa; font-size:11px; letter-spacing:.8px; text-transform:uppercase; text-align:center;">
+          Ask Geo Automated Planning System<br/>
+          <span style="color:#71717a; font-weight:400; text-transform:none; letter-spacing:0; display:inline-block; margin-top:5px;">Generated on ${generatedAt}</span>
+        </div>
+      </div>
     </div>
-    <div style="background-color: #111827; padding: 20px; text-align: center; color: #9ca3af; font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">
-      Ask Geo Automated Intelligence System<br />
-      <span style="font-weight: 400; color: #6b7280; margin-top: 4px; display: inline-block;">${new Date().toLocaleString()}</span>
-    </div>
-  </div>
-`;
+  </div>`;
+};
 
 // --- SEO & GEO & AIO HOOK ---
 // Dynamically updates Meta Tags and JSON-LD Structured Data for AI Overviews and Google
@@ -469,9 +500,12 @@ const analyseFinancialAudit = (form) => {
   const lumpSum = toNumber(form.lumpSum);
   const targetAmount = toNumber(form.targetAmount);
 
+  const cashFlowSurplus = Math.max(income - expenses - emi, 0);
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
   const debtRatio = income > 0 ? (emi / income) * 100 : 0;
-  const investableSurplus = Math.max(monthlyInvestmentCapacity || (savings - emi), 0);
+  const investableSurplus = monthlyInvestmentCapacity > 0
+    ? Math.max(Math.min(monthlyInvestmentCapacity, cashFlowSurplus || monthlyInvestmentCapacity), 0)
+    : Math.max(Math.min(savings, cashFlowSurplus), 0);
 
   const emergencyMap = {
     'No': { score15: 0, score20: 0, status: 'Weak' },
@@ -583,6 +617,7 @@ const analyseFinancialAudit = (form) => {
     income,
     expenses,
     savings,
+    cashFlowSurplus,
     savingsRate,
     investableSurplus,
     emergencyStatus: emergency.status,
@@ -1276,14 +1311,68 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
 
   const goalOptions = ['Emergency fund', 'Home', 'Car', 'Child education', 'Retirement', 'Travel', 'Business', 'Wealth creation', 'Debt-free life'];
 
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+
+  const getStepValidationError = (stepToCheck) => {
+    const income = toNumber(form.monthlyIncome);
+    const expenses = toNumber(form.monthlyExpenses);
+    const savings = toNumber(form.monthlySavings);
+    const emi = form.hasLoans === 'Yes' ? toNumber(form.monthlyEmi) : 0;
+
+    if (stepToCheck === 0) {
+      if (!form.name.trim()) return 'Please enter your full name.';
+      if (!/^[0-9]{10}$/.test(form.phone)) return 'Please enter a valid 10-digit phone number.';
+      if (!isValidEmail(form.email)) return 'Please enter a valid email address.';
+      if (toNumber(form.age) < 18 || toNumber(form.age) > 80) return 'Please enter a valid age between 18 and 80.';
+      if (income <= 0) return 'Please enter monthly income after tax.';
+      if (form.dependents === 'Yes' && toNumber(form.dependentsCount) <= 0) return 'Please enter number of dependents.';
+    }
+
+    if (stepToCheck === 1) {
+      if (savings < 0) return 'Monthly savings cannot be negative.';
+      if (expenses <= 0) return 'Please enter average monthly expenses excluding EMI.';
+      if (form.hasLoans === 'Yes' && emi <= 0) return 'Please enter monthly EMI amount.';
+      if (income > 0 && expenses + savings + emi > income) {
+        return 'Expenses + savings + EMI cannot be higher than monthly income. Please correct the inputs.';
+      }
+    }
+
+    if (stepToCheck === 2) {
+      if (toNumber(form.monthlyInvestCapacity) <= 0) return 'Please enter comfortable monthly investment amount.';
+      if (!form.topGoals.length) return 'Please select at least one financial goal.';
+      if (!form.primaryGoal.trim()) return 'Please enter your most important financial goal.';
+      if (toNumber(form.targetAmount) <= 0) return 'Please enter the target amount needed.';
+    }
+
+    if (stepToCheck === 3) {
+      if (!form.marketReaction) return 'Please select your reaction to market fall.';
+      if (!form.capitalPreference) return 'Please select what matters more to you.';
+    }
+
+    return '';
+  };
+
+  const validateStep = (stepToCheck) => {
+    const error = getStepValidationError(stepToCheck);
+    if (error) {
+      alert(error);
+      setStep(stepToCheck);
+      return false;
+    }
+    return true;
+  };
+
+  const validateAllSteps = () => {
+    for (let index = 0; index < steps.length; index += 1) {
+      if (!validateStep(index)) return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.name.trim() || !form.phone.trim() || !form.email.trim()) {
-      alert('Please add name, phone number, and email before generating the report.');
-      setStep(0);
-      return;
-    }
+    if (!validateAllSteps()) return;
 
     setIsSending(true);
 
@@ -1589,7 +1678,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                 <AuditInput label="Current Monthly Savings">
                   <input required className={inputClass} type="number" value={form.monthlySavings} onChange={(e) => update('monthlySavings', e.target.value)} placeholder="e.g. 25000" />
                 </AuditInput>
-                <AuditInput label="Average Monthly Expenses">
+                <AuditInput label="Average Monthly Expenses Excluding EMI">
                   <input required className={inputClass} type="number" value={form.monthlyExpenses} onChange={(e) => update('monthlyExpenses', e.target.value)} placeholder="e.g. 55000" />
                 </AuditInput>
                 <AuditInput label="Emergency Fund">
@@ -1702,8 +1791,7 @@ const FinancialAuditTool = ({ embedded = false, setCurrentPage, openContactModal
                 <GeoButton
                   type="button"
                   onClick={(e) => {
-                    const formElement = e.currentTarget.closest('form');
-                    if (formElement && !formElement.reportValidity()) return;
+                    if (!validateStep(step)) return;
                     setStep((prev) => Math.min(prev + 1, steps.length - 1));
                   }}
                   icon={ArrowRight}
@@ -1801,182 +1889,267 @@ const SipSmartSummary = ({ monthlyInvestment, years, expectedReturn, totalInvest
 
 
 const generateReport = async (config, leadData) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    throw new Error("Please allow popups to download the report.");
+  await loadJsPdf();
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+
+  const pageWidth = 210;
+  const marginX = 14;
+  const green = [4, 120, 87];
+  const lightGreen = [236, 253, 245];
+  const zinc = [24, 24, 27];
+  const muted = [82, 82, 91];
+  const border = [229, 231, 235];
+
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const cleanTitle = String(config.reportTitle || 'Ask Geo Report').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  const cleanName = String(leadData?.name || 'Client').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  const filename = `${cleanTitle || 'AskGeo-Report'}-${cleanName || 'Client'}.pdf`;
+
+  const stripHtml = (value) => String(value || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/?strong>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+\n/g, '\n')
+    .trim();
+
+  let y = 0;
+
+  const addFooter = () => {
+    pdf.setDrawColor(...border);
+    pdf.line(marginX, 283, pageWidth - marginX, 283);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(113, 113, 122);
+    pdf.text(safePdfText('Educational projection only. Not investment advice, product recommendation, or guarantee of returns.'), marginX, 288);
+    pdf.text(safePdfText('Ask Geo Financial Services'), pageWidth - marginX, 288, { align: 'right' });
+  };
+
+  const ensurePage = (heightNeeded = 24) => {
+    if (y + heightNeeded > 276) {
+      addFooter();
+      pdf.addPage();
+      y = 18;
+    }
+  };
+
+  const sectionTitle = (title) => {
+    ensurePage(16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(15);
+    pdf.setTextColor(...zinc);
+    pdf.text(safePdfText(title), marginX, y);
+    y += 8;
+  };
+
+  const paragraph = (text, x = marginX, width = 182, fontSize = 9, lineHeight = 4.8) => {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(fontSize);
+    pdf.setTextColor(...muted);
+    const lines = pdf.splitTextToSize(safePdfText(stripHtml(text)), width);
+    lines.forEach((line) => {
+      ensurePage(lineHeight + 2);
+      pdf.text(line, x, y);
+      y += lineHeight;
+    });
+  };
+
+  const metricBox = (x, boxY, w, h, label, value, accent = false) => {
+    const bg = accent ? lightGreen : [249, 250, 251];
+    pdf.setFillColor(bg[0], bg[1], bg[2]);
+    pdf.setDrawColor(...border);
+    pdf.roundedRect(x, boxY, w, h, 3, 3, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(113, 113, 122);
+    pdf.text(safePdfText(label).toUpperCase(), x + 4, boxY + 6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(12);
+    pdf.setTextColor(...(accent ? green : zinc));
+    const valueLines = pdf.splitTextToSize(safePdfText(value), w - 8);
+    pdf.text(valueLines.slice(0, 2), x + 4, boxY + 14);
+  };
+
+  const drawTable = (headers, rows, widths) => {
+    const tableX = marginX;
+    const rowBaseHeight = 10;
+    const tableWidth = widths.reduce((a, b) => a + b, 0);
+
+    ensurePage(20);
+    pdf.setFillColor(244, 244, 245);
+    pdf.setDrawColor(...border);
+    pdf.rect(tableX, y, tableWidth, rowBaseHeight, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(6.2);
+    pdf.setTextColor(82, 82, 91);
+
+    let cx = tableX;
+    headers.forEach((header, index) => {
+      pdf.text(safePdfText(header).toUpperCase(), cx + 2, y + 6.5);
+      cx += widths[index];
+    });
+
+    y += rowBaseHeight;
+
+    rows.forEach((row) => {
+      const wrappedCells = row.map((cell, index) => pdf.splitTextToSize(safePdfText(cell), widths[index] - 4));
+      const maxLines = Math.max(...wrappedCells.map((lines) => lines.length));
+      const rowHeight = Math.max(rowBaseHeight, maxLines * 4.2 + 5);
+
+      ensurePage(rowHeight + 4);
+      pdf.setDrawColor(...border);
+      pdf.rect(tableX, y, tableWidth, rowHeight);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.4);
+      pdf.setTextColor(...zinc);
+
+      cx = tableX;
+      wrappedCells.forEach((lines, index) => {
+        pdf.text(lines, cx + 2, y + 5.5);
+        cx += widths[index];
+      });
+
+      y += rowHeight;
+    });
+
+    y += 8;
+  };
+
+  pdf.setFillColor(...green);
+  pdf.rect(0, 0, pageWidth, 82, 'F');
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(marginX, 13, 31, 12, 2, 2, 'F');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(...green);
+  pdf.text('ASK GEO', marginX + 6, 21);
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.setTextColor(167, 243, 208);
+  pdf.text(safePdfText(config.reportTitle || 'ASK GEO REPORT').toUpperCase(), marginX, 39);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(24);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(safePdfText(config.mainHeading || 'Financial Planning Report'), marginX, 53);
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(209, 250, 229);
+  const headingSummary = pdf.splitTextToSize(safePdfText(stripHtml(config.summaryText || 'Personalized report generated using Ask Geo financial planning tools.')), 165);
+  pdf.text(headingSummary.slice(0, 3), marginX, 63);
+
+  pdf.setDrawColor(255, 255, 255);
+  pdf.setLineWidth(0.15);
+  pdf.line(marginX, 71, pageWidth - marginX, 71);
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(209, 250, 229);
+  pdf.text('PREPARED FOR', marginX, 77);
+  pdf.text('DATE', pageWidth - marginX, 77, { align: 'right' });
+
+  pdf.setFontSize(9);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(safePdfText(leadData?.name || 'Website Visitor'), marginX, 81);
+  pdf.text(today, pageWidth - marginX, 81, { align: 'right' });
+
+  y = 98;
+
+  sectionTitle('Report Summary');
+  pdf.setFillColor(...lightGreen);
+  pdf.setDrawColor(209, 250, 229);
+  pdf.roundedRect(marginX, y, pageWidth - marginX * 2, 32, 4, 4, 'FD');
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(6, 78, 59);
+  const summaryLines = pdf.splitTextToSize(safePdfText(stripHtml(config.summaryText || 'This report is generated for educational and planning purposes.')), pageWidth - marginX * 2 - 10);
+  pdf.text(summaryLines.slice(0, 5), marginX + 5, y + 8);
+  y += 44;
+
+  sectionTitle('Primary Result');
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(...border);
+  pdf.roundedRect(marginX, y, pageWidth - marginX * 2, 34, 4, 4, 'FD');
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.setTextColor(113, 113, 122);
+  pdf.text(safePdfText(config.primaryMetric?.label || 'Primary Metric').toUpperCase(), marginX + 5, y + 9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(22);
+  pdf.setTextColor(...green);
+  pdf.text(safePdfText(config.primaryMetric?.value || '-'), marginX + 5, y + 24);
+  y += 46;
+
+  const secondaryMetrics = config.secondaryMetrics || [];
+  if (secondaryMetrics.length) {
+    sectionTitle('Key Numbers');
+    const boxW = 87;
+    const boxH = 24;
+    const gap = 6;
+
+    secondaryMetrics.forEach((metric, index) => {
+      ensurePage(boxH + 6);
+      const col = index % 2;
+      const rowY = y + Math.floor(index / 2) * (boxH + gap);
+      metricBox(marginX + col * (boxW + gap), rowY, boxW, boxH, metric.label, metric.value, Boolean(metric.success));
+    });
+
+    y += Math.ceil(secondaryMetrics.length / 2) * (boxH + gap) + 8;
   }
 
-  const today = new Date().toLocaleDateString('en-IN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  if (config.allocation?.funds?.length) {
+    sectionTitle('Indicative Category-Level Allocation');
+    paragraph(config.allocation.description || 'This is an indicative category-level allocation. It does not recommend any specific mutual fund scheme, stock, insurance product, or guaranteed-return product.', marginX, 182, 8.5, 4.5);
+    y += 3;
+    drawTable(
+      ['Bucket', 'Category', 'Share', 'Amount'],
+      config.allocation.funds.map((item) => [item.name, item.category, `${item.percent}%`, `${formatCurrency(item.amount)}/mo`]),
+      [62, 48, 28, 42]
+    );
+  }
+
+  sectionTitle('Planning Interpretation');
+  [
+    'These numbers are projections, not promises. Actual results may differ due to market performance, fees, taxation, timing, and investor behaviour.',
+    'Before acting on any projection, review emergency fund, insurance protection, debt pressure, investment horizon, and risk comfort.',
+    'This report avoids specific scheme recommendations. Final product selection should be reviewed by a qualified financial advisor.',
+  ].forEach((note) => {
+    ensurePage(14);
+    pdf.setFillColor(...green);
+    pdf.circle(marginX + 1.5, y - 1.5, 1.2, 'F');
+    paragraph(note, marginX + 6, 174, 8.8, 4.7);
+    y += 2;
   });
 
-  const refId = `AG-${Math.floor(Math.random() * 10000)}`;
+  y += 4;
+  sectionTitle('Disclaimer');
+  paragraph('This report is for educational and financial planning illustration only. It is not investment advice, tax advice, legal advice, research, solicitation, or a recommendation to buy or sell any financial product. Market-linked investments are subject to risk. Final decisions should be made only after professional review.', marginX, 182, 8.3, 4.5);
 
-  const pdfMarkup = `
-    <div class="page-container" id="pdf-content">
-      <div class="header">
-        <div class="logo-container">
-          <div style="background: #ffffff; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <img src="https://static.wixstatic.com/media/548938_d02490efa777416caf274ba6f2482d6e~mv2.png" alt="Ask Geo" style="height: 28px; width: auto; object-fit: contain;" />
-          </div>
-        </div>
-        <div class="report-title">${config.reportTitle}</div>
-        <h1 class="main-heading">${config.mainHeading}</h1>
-        <div class="client-info">
-          <div class="info-block">
-            <p>Prepared For</p>
-            <h4>${leadData.name}</h4>
-            <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">${leadData.email}</h4>
-          </div>
-          <div class="info-block" style="text-align: right;">
-            <p>Date</p>
-            <h4>${today}</h4>
-            <h4 style="color: #d1fae5; font-weight: 400; font-size: 12px; margin-top: 4px;">Ref: ${refId}</h4>
-          </div>
-        </div>
-      </div>
-      <div class="content">
-        <p style="font-size: 14px; color: #475569; line-height: 1.6; font-weight: 400; margin-bottom: 25px;">
-          ${config.summaryText}
-        </p>
-        <div class="chart-container">
-          <div class="chart-title">${config.primaryMetric.label}</div>
-          <div style="font-size: 48px; font-weight: 300; letter-spacing: -2px; margin-bottom: 15px; color: #047857;">${config.primaryMetric.value}</div>
-          <svg style="width: 100%; height: 100px; display: block; overflow: visible;" viewBox="0 0 1000 200" preserveAspectRatio="none">
-            <path d="M0,200 L1000,100" stroke="#cbd5e1" stroke-width="2" fill="none" />
-            <path d="M0,200 Q600,180 1000,0" stroke="#059669" stroke-width="4" fill="none" />
-            <path d="M0,200 Q600,180 1000,0 L1000,200 Z" fill="rgba(16, 185, 129, 0.1)" />
-          </svg>
-        </div>
+  addFooter();
 
-        <div class="highlight-grid">
-          ${config.secondaryMetrics.map(metric => `
-            <div class="metric-card" ${metric.success ? 'style="background: #ecfdf5; border-color: #a7f3d0;"' : ''}>
-              <div class="metric-label" ${metric.success ? 'style="color: #065f46;"' : ''}>${metric.label}</div>
-              <div class="metric-value ${metric.success ? 'success' : ''}">${metric.value}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-      <div class="footer">
-        <p style="font-size: 8px; color: #94a3b8; text-align: left; margin-bottom: 8px;">Disclaimer: This blueprint is generated by Ask Geo AI Tools for educational and planning purposes only. Calculations are subject to market risks and historical assumptions.</p>
-        <div style="text-align: right; font-size: 11px; font-weight: 600; color: #0f172a;">Ask Geo Financial Services<br/><span style="color: #64748b; font-weight: 400; font-size: 10px;">www.askgeo.in | +91 99606 24271</span></div>
-      </div>
-    </div>
-  `;
-
-  const printHtml = `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <title>Ask Geo - ${config.reportTitle}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-          @page { size: A4; margin: 0; }
-          * { box-sizing: border-box; text-align: left; }
-          body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #18181b; background: #ffffff; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; position: relative; overflow: hidden; background: #ffffff; }
-          .header { background: #047857; color: #ffffff; padding: 50px 50px 40px 50px; position: relative; overflow: hidden; }
-          .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
-          .report-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #a7f3d0; margin-bottom: 10px; }
-          .main-heading { font-size: 36px; font-weight: 300; letter-spacing: -1px; margin: 0 0 10px 0; line-height: 1.1; }
-          .client-info { display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px; margin-top: 30px; }
-          .info-block p { margin: 0 0 5px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #d1fae5; }
-          .info-block h4 { margin: 0; font-size: 14px; font-weight: 500; }
-          .content { padding: 40px 50px; }
-          .chart-container { background: #f8fafc; border-radius: 16px; padding: 30px; color: #0f172a; margin-bottom: 30px; border: 1px solid #e2e8f0; }
-          .chart-title { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #64748b; margin-bottom: 15px; }
-          .highlight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-          .metric-card { background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
-          .metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 8px; }
-          .metric-value { font-size: 28px; font-weight: 300; margin: 0; color: #0f172a; letter-spacing: -1px; }
-          .metric-value.success { color: #059669; font-weight: 500; }
-          .footer { position: absolute; bottom: 0; width: 100%; padding: 30px 50px; border-top: 1px solid #e2e8f0; background: #ffffff; box-sizing: border-box; }
-        </style>
-      </head>
-      <body>
-        ${pdfMarkup}
-        <script>
-          window.onload = function() {
-            setTimeout(() => { window.print(); }, 500);
-          };
-        </script>
-      </body>
-    </html>
-  `;
-
-  printWindow.document.write(printHtml);
-  printWindow.document.close();
+  const pdfDataUri = pdf.output('datauristring');
+  downloadDataUri(pdfDataUri, filename);
 
   const emailHtmlBody = getBeautifulEmailTemplate(
     `Report Download: ${config.reportTitle}`,
     leadData,
-    [config.primaryMetric, ...config.secondaryMetrics]
+    [config.primaryMetric, ...(config.secondaryMetrics || [])]
   );
 
-  let hiddenDiv = null;
+  const recipients = leadData?.email?.trim() ? [leadData.email.trim(), TARGET_EMAIL] : TARGET_EMAIL;
 
-  try {
-    if (window.getSelection) {
-      window.getSelection().removeAllRanges();
-    }
+  await sendEmailViaBackend(
+    `Ask Geo Report: ${config.reportTitle} for ${leadData?.name || 'New Lead'}`,
+    emailHtmlBody,
+    [{ filename, dataUri: pdfDataUri, contentType: 'application/pdf' }],
+    recipients
+  );
 
-    hiddenDiv = document.createElement('div');
-    hiddenDiv.style.position = 'absolute';
-    hiddenDiv.style.left = '0';
-    hiddenDiv.style.top = '0';
-    hiddenDiv.style.width = '210mm';
-    hiddenDiv.style.background = '#fff';
-    hiddenDiv.style.opacity = '0.01'; 
-    hiddenDiv.style.pointerEvents = 'none';
-    hiddenDiv.style.zIndex = '-9999';
-    hiddenDiv.innerHTML = pdfMarkup;
-    document.body.appendChild(hiddenDiv);
-
-    if (!window.html2pdf) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('html2pdf.js failed to load'));
-        document.head.appendChild(script);
-      });
-    }
-
-    const opt = {
-      margin: 0,
-      filename: `${config.reportTitle.replace(/\s+/g, '_')}.pdf`,
-      image: { type: 'jpeg', quality: 0.8 },
-      html2canvas: { scale: 1.5, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-    };
-
-    const targetElement = hiddenDiv.querySelector('#pdf-content');
-    const pdfBase64DataUri = await window.html2pdf()
-      .set(opt)
-      .from(targetElement)
-      .outputPdf('datauristring');
-
-    await sendEmailViaBackend(
-      `Report Request: ${config.reportTitle} for ${leadData.name}`,
-      emailHtmlBody,
-      [{ filename: opt.filename, dataUri: pdfBase64DataUri }]
-    );
-  } catch (error) {
-    console.error('PDF generation failed, sending email without attachment', error);
-
-    await sendEmailViaBackend(
-      `Report Request: ${config.reportTitle} for ${leadData.name}`,
-      emailHtmlBody
-    );
-  } finally {
-    if (hiddenDiv && document.body.contains(hiddenDiv)) {
-      document.body.removeChild(hiddenDiv);
-    }
-  }
+  return pdfDataUri;
 };
 
 const LeadCaptureModal = ({ isOpen, onClose, onDownloadComplete }) => {
@@ -2209,7 +2382,7 @@ const StepUpCalculatorWidget = () => {
 
   for (let year = 1; year <= years; year++) {
     for (let month = 1; month <= 12; month++) {
-      futureValue = (futureValue + currentSip) * (1 + monthlyRate);
+      futureValue = (futureValue * (1 + monthlyRate)) + currentSip;
       totalInvested += currentSip;
     }
     currentSip = currentSip * (1 + stepUpPercent / 100);
@@ -2319,9 +2492,11 @@ const StpToSipCalculatorWidget = () => {
 
   for (let m = 1; m <= months; m++) {
     sourceBalance = sourceBalance * (1 + sourceMonthlyRate);
+    targetCorpus = targetCorpus * (1 + targetMonthlyRate);
+
     const transfer = Math.min(sustainableMonthlyStp, sourceBalance);
     sourceBalance -= transfer;
-    targetCorpus = (targetCorpus + transfer) * (1 + targetMonthlyRate);
+    targetCorpus += transfer;
     totalTransferred += transfer;
   }
 
@@ -2429,10 +2604,8 @@ const EmiMatchSipWidget = () => {
   const totalBankOutflow = (emi * n) + downPayment;
 
   const sipRate = sipReturn / 12 / 100;
-  const sipFutureValue = emi === 0
-    ? 0
-    : emi * (((Math.pow(1 + sipRate, n) - 1) / sipRate) * (1 + sipRate));
-  const decisionGap = sipFutureValue - assetCost;
+  const investedEmiCorpus = sipFutureValue(emi, sipReturn, tenureYears);
+  const decisionGap = investedEmiCorpus - assetCost;
 
   const handleDownloadInitiate = () => setIsLeadModalOpen(true);
   const handleDownloadComplete = (leadData) => {
@@ -2441,7 +2614,7 @@ const EmiMatchSipWidget = () => {
       reportTitle: "EMI vs SIP Comparison",
       mainHeading: "Purchase Opportunity Cost",
       summaryText: `Analysis of a ₹${assetCost.toLocaleString('en-IN')} purchase financed over ${tenureYears} years vs. investing the equivalent EMI of ${formatCurrency(emi)} in the market.`,
-      primaryMetric: { label: "If EMI amount were invested", value: formatCurrency(sipFutureValue) },
+      primaryMetric: { label: "If EMI amount were invested", value: formatCurrency(investedEmiCorpus) },
       secondaryMetrics: [
         { label: "Total Bank Outflow (Cost)", value: formatCurrency(totalBankOutflow) },
         { label: "Net difference vs asset cost", value: formatCurrency(decisionGap), success: decisionGap >= 0 }
@@ -2514,7 +2687,7 @@ const EmiMatchSipWidget = () => {
             </div>
             <div className="pt-8 border-t border-zinc-800 relative z-10">
               <p className="text-[10px] sm:text-xs font-bold tracking-widest text-white uppercase mb-3">If EMI amount were invested instead</p>
-              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(sipFutureValue)}</p>
+              <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-white tracking-tight leading-none mb-5">{formatCurrency(investedEmiCorpus)}</p>
               <p className={`text-xs font-medium inline-block px-4 py-2 rounded-lg border mb-8 ${decisionGap >= 0 ? 'text-emerald-300 bg-emerald-900/30 border-emerald-500/20' : 'text-zinc-300 bg-zinc-800/50 border-zinc-600'}`}>
                 Net difference vs asset cost: {formatCurrency(decisionGap)}
               </p>
@@ -2544,8 +2717,7 @@ const EmiVsSipCalculatorWidget = () => {
   const totalPaidToBank = emi * totalMonths;
   const totalInterestPaid = totalPaidToBank - loanAmount;
 
-  const sipRatePerMonth = marketReturn / 12 / 100;
-  const projectedWealth = emi * ((Math.pow(1 + sipRatePerMonth, totalMonths) - 1) / sipRatePerMonth) * (1 + sipRatePerMonth);
+  const projectedWealth = sipFutureValue(emi, marketReturn, tenureYears);
   const wealthLost = projectedWealth - totalPaidToBank;
 
   const handleDownloadInitiate = () => setIsLeadModalOpen(true);
@@ -2697,7 +2869,7 @@ const ExtraEmiCalculatorWidget = () => {
     generateReport({
       reportTitle: "EMI Prepayment Strategy",
       mainHeading: "Loan Acceleration Plan",
-      summaryText: `By maintaining your original EMI after an interest rate drop to ${currentRate}% and adding ₹${extraEmiAmount.toLocaleString('en-IN')} as an extra yearly payment, you drastically reduce your loan lifespan.`,
+      summaryText: `By maintaining your original EMI after an interest rate drop to ${currentRate}% and adding ${extraEmisPerYear} extra EMI payment(s) of ${formatCurrency(extraEmiAmount)} per year, you can reduce your loan lifespan and total interest burden.`,
       primaryMetric: { label: "Total Time Saved", value: formatYM(safeTime(totalSavedTime)) },
       secondaryMetrics: [
         { label: "Original Tenure", value: formatYM(nOrg) },
@@ -2776,7 +2948,7 @@ const ExtraEmiCalculatorWidget = () => {
                  <p className="text-[10px] font-medium tracking-widest text-emerald-300 uppercase mb-4">Tenure comparison</p>
                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                       <p className="text-[9px] text-zinc-400 mb-1">At {originalRate}% (org)</p>
+                       <p className="text-[9px] text-zinc-400 mb-1">At {originalRate}% original</p>
                        <p className="text-sm font-semibold">{formatYM(nOrg)}</p>
                     </div>
                     <div>
@@ -2835,7 +3007,7 @@ const SmartEmiCalculatorWidget = () => {
   const totalInterestPaid = totalPaidToBank - loanAmount;
 
   const i = sipReturn / 12 / 100;
-  const sipFactor = ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
+  const sipFactor = i === 0 ? n : ((Math.pow(1 + i, n) - 1) / i);
   const targetCorpus = recoveryMode === 'interest' ? totalInterestPaid : recoveryMode === 'principal' ? loanAmount : totalPaidToBank;
   const requiredSip = targetCorpus / sipFactor;
   const sipPercentageOfEmi = emi > 0 ? ((requiredSip / emi) * 100).toFixed(1) : '0.0';
@@ -2981,7 +3153,7 @@ const EarlyClosureWidget = () => {
     : outstandingPrincipal + interestPaidTillTarget;
 
   const i = sipReturn / 12 / 100;
-  const sipFactor = ((Math.pow(1 + i, t) - 1) / i) * (1 + i);
+  const sipFactor = i === 0 ? t : ((Math.pow(1 + i, t) - 1) / i);
   const requiredSip = targetCorpus / sipFactor;
 
   const originalTotalOutflow = emi * n;
@@ -3282,9 +3454,8 @@ const GoalCalculatorWidget = () => {
   const [expectedReturn, setExpectedReturn] = useState(12);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
 
-  const ratePerMonth = expectedReturn / 12 / 100;
   const totalMonths = years * 12;
-  const requiredSip = targetAmount / (((Math.pow(1 + ratePerMonth, totalMonths) - 1) / ratePerMonth) * (1 + ratePerMonth));
+  const requiredSip = monthlyNeededForGoal(targetAmount, totalMonths, expectedReturn);
 
   const handleDownloadInitiate = () => setIsLeadModalOpen(true);
   const handleDownloadComplete = (leadData) => {
