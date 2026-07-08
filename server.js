@@ -8,8 +8,7 @@ app.use(express.json({ limit: '50mb' }));
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const GEO_EMAIL = process.env.GEO_EMAIL || 'geoconsultant@gmail.com';
-const FROM_EMAIL =
-  process.env.FROM_EMAIL || 'Ask Geo System <system@emails.liaisonit.com>';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Ask Geo System <system@emails.liaisonit.com>';
 
 const normalizeRecipients = (value) => {
   if (!value) return [];
