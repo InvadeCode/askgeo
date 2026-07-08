@@ -165,6 +165,18 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    hasResendKey: Boolean(process.env.RESEND_API_KEY),
+    resendKeyPrefix: process.env.RESEND_API_KEY
+      ? process.env.RESEND_API_KEY.slice(0, 6)
+      : null,
+    geoEmail: process.env.GEO_EMAIL || 'geoconsultant@gmail.com',
+    fromEmail: process.env.FROM_EMAIL || 'Ask Geo System <system@emails.liaisonit.com>',
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Email backend running on port ${PORT}`);
 });
